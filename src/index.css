@@ -1,0 +1,61 @@
+/* src/index.css */
+
+/* Import Google Fonts (Correct URL) */
+/* src/index.css */
+@import url('https://fonts.googleapis.com/css2?family=Josefin+Sans:wght@600;700&family=Work+Sans:wght@400&display=swap');
+@import "tailwindcss";
+
+:root {
+  /* JUKANES Brand Colors */
+  --color-primary: #ffc72c;    /* Yellow */
+  --color-secondary: #20a39e;   /* Teal */
+  --color-light: #fffacd;      /* Lemon Chiffon */
+  --color-dark: #2e4057;       /* Dark Slate Blue/Gray */
+  --color-accent: #ff6b6b;      /* Light Coral */
+  --color-gray-custom: #797e88;  /* Body Text Gray (Keep or adjust?) */
+
+  /* Fonts */
+  --font-sans: 'Work Sans', sans-serif;
+  --font-heading: 'Josefin Sans', sans-serif;
+}
+
+body {
+  font-family: var(--font-sans);
+  color: var(--color-gray-custom);
+  margin: 0;
+}
+
+h1, h2, h3, h4, h5, h6 {
+  font-family: var(--font-heading);
+  color: var(--color-dark); /* Use the new dark color */
+  margin-top: 0;
+  margin-bottom: 0.5rem;
+  line-height: 1.2;
+}
+/* Custom Swiper Navigation Styles */
+.swiper-button-prev,
+.swiper-button-next {
+  color: var(--color-primary); /* Use your primary color */
+  background-color: rgba(5, 19, 17, 0.5); /* Semi-transparent dark bg */
+  width: 44px !important;  /* Ensure size */
+  height: 44px !important; /* Ensure size */
+  border-radius: 50%; /* Make it circular */
+  transition: background-color 0.2s ease;
+}
+
+.swiper-button-prev::after,
+.swiper-button-next::after {
+  font-size: 1.5rem !important; /* Adjust arrow size */
+  font-weight: bold;
+}
+
+.swiper-button-prev:hover,
+.swiper-button-next:hover {
+   background-color: rgba(5, 19, 17, 0.8); /* Darker background on hover */
+   color: #fff; /* White arrow on hover */
+}
+
+/* Position adjustments if needed */
+.swiper-button-prev { left: 20px !important; }
+.swiper-button-next { right: 20px !important; }
+
