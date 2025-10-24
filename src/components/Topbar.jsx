@@ -4,43 +4,42 @@ import { FaPhoneAlt, FaEnvelopeOpen, FaMapMarkerAlt } from 'react-icons/fa';
 
 const Topbar = () => {
   return (
-    <div className="w-full bg-[#20a39e] text-white py-1"> {/* Teal BG */}
+    // Use teal background (#20a39e)
+    <div className="w-full bg-[#20a39e] text-white py-2">
       <div className="container mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex flex-wrap items-center justify-between min-h-[4.5rem]">
+        {/* Use flex, items-center, justify-between */}
+        <div className="flex flex-wrap items-center justify-center lg:justify-between min-h-[4.5rem]">
+
           {/* Logo Section */}
-          <div className="w-auto mb-3 sm:mb-0">
+          {/* On mobile (default): w-full, text-center. On large (lg): w-auto, text-left */}
+          <div className="w-full text-center lg:w-auto lg:text-left mb-3 lg:mb-0">
             <Link to="/">
-              {/* Changed Logo text to White for better contrast */}
               <img
-                src="/img/logo.svg"
+                src="/img/logo.svg" // Path to your logo
                 alt="JUKANES Association Logo"
-                className="h-12 lg:h-14 filter brightness-0 invert" // Use filter to make PNG logo white if needed
-                // If using SVG, you might set fill="white"
+                className="h-12 lg:h-14 inline-block" // Use inline-block for centering
               />
-              {/* Fallback text if image fails */}
-              {/* <h1 className="text-4xl lg:text-5xl font-bold font-heading text-white m-0 leading-none">
-                JUKANES
-              </h1> */}
             </Link>
           </div>
+
           {/* Contact Info Section */}
-          <div className="w-auto">
+          {/* HIDDEN on mobile by default, flex on large screens */}
+          <div className="hidden lg:flex w-auto">
             <div className="flex flex-wrap justify-center lg:justify-end gap-x-6 lg:gap-x-10">
+
               {/* Call Us */}
               <div className="flex items-center">
-                 {/* Yellow BG (#ffc72c), Dark Icon (#2e4057) - OK */}
                 <div className="flex-shrink-0 w-12 h-12 bg-[#ffc72c] flex items-center justify-center">
                   <FaPhoneAlt className="text-[#2e4057] text-xl" />
                 </div>
                 <div className="ml-3">
-                  {/* Yellow Title (#ffc72c) on Teal BG - Use White for better contrast */}
                   <h6 className="font-heading text-white mb-0 text-base font-semibold tracking-wide">Call Us</h6>
-                  <span className="text-gray-200 text-sm">+012 345 6789</span> {/* Slightly lighter gray */}
+                  <span className="text-gray-200 text-sm">+254 7XX XXXX</span>
                 </div>
               </div>
+
               {/* Mail Us */}
               <div className="flex items-center">
-                 {/* Yellow BG, Dark Icon - OK */}
                 <div className="flex-shrink-0 w-12 h-12 bg-[#ffc72c] flex items-center justify-center">
                   <FaEnvelopeOpen className="text-[#2e4057] text-xl" />
                 </div>
@@ -49,9 +48,9 @@ const Topbar = () => {
                   <span className="text-gray-200 text-sm">info@jukanes.org</span>
                 </div>
               </div>
+
               {/* Address */}
               <div className="flex items-center">
-                 {/* Yellow BG, Dark Icon - OK */}
                 <div className="flex-shrink-0 w-12 h-12 bg-[#ffc72c] flex items-center justify-center">
                   <FaMapMarkerAlt className="text-[#2e4057] text-xl" />
                 </div>
@@ -67,4 +66,5 @@ const Topbar = () => {
     </div>
   );
 };
+
 export default Topbar;
