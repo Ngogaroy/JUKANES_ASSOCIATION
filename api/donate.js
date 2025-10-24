@@ -18,28 +18,41 @@ const connectDB = async () => {
   }
 };
 
-// --- Database Schema (Updated) ---
+// --- Database Schema (Unified) ---
 const donationSchema = new mongoose.Schema({
   name: { type: String, required: true },
   email: { type: String, required: true },
   amount: { type: String, required: true },
-  currency: { type: String, required: true, default: 'usd' }, // <-- Set default to USD
+  currency: { type: String, required: true }, // Will be 'usd' or 'kes'
   status: { type: String, default: 'Pending' },
-  stripePaymentIntentId: { type: String },
+  stripePaymentIntentId: { type: String }, // For Stripe
+  mpesaCheckoutRequestID: { type: String }, // For M-Pesa
   createdAt: { type: Date, default: Date.now },
 });
 const Donation = mongoose.models.Donation || mongoose.model('Donation', donationSchema);
 
-// --- CORS Helper ---
-const setCorsHeaders = (res) => {
-  res.setHeader('Access-Control-Allow-Origin', '*');
-  res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
-  res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
+// --- CORS Helper (NEW) ---
+const setCorsHeaders = (req, res) => {
+  const origin = req.headers.origin;
+  const allowedOrigins = [
+    'http://localhost:3000', // For vercel dev
+    'https://jukaneswebsite.vercel.app' // YOUR LIVE VERCEL URL
+    // Add your custom domain here later
+  ];
+
+  if (allowedOrigins.includes(origin)) {
+    res.setHeader('Access-Control-Allow-Origin', origin);
+  }
+  
+  res.setHeader('Access-Control-Allow-Methods', 'POST, GET, OPTIONS');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
 };
 
 // --- Main Handler ---
 const handler = async (req, res) => {
-  setCorsHeaders(res);
+  // *** CORRECTION 1: Pass 'req' to the CORS function ***
+  setCorsHeaders(req, res); 
+
   if (req.method === 'OPTIONS') return res.status(200).end();
   if (req.method !== 'POST') {
     res.setHeader('Allow', ['POST', 'OPTIONS']);
@@ -58,33 +71,33 @@ const handler = async (req, res) => {
     return res.status(400).json({ msg: 'Please enter all fields' });
   }
 
-  // --- CURRENCY UPDATE ---
-  // Charge in USD. 1 USD = 100 cents.
+  // --- Charge in USD ---
   const amountInCents = Math.round(parseFloat(amount) * 100);
-  const currency = 'usd'; // <-- CHARGE IN USD
+  const currency = 'usd';
 
   if (isNaN(amountInCents) || amountInCents < 50) { // Stripe minimum $0.50 USD
     return res.status(400).json({ msg: 'Invalid amount' });
   }
-  // --- END CURRENCY UPDATE ---
+  // --- END CURRENCY ---
 
   try {
-    // --- STRIPE UPDATE ---
+    // --- Create Stripe Payment Intent ---
     const paymentIntent = await stripe.paymentIntents.create({
       amount: amountInCents,
-      currency: currency, // <-- Use USD
+      currency: currency,
       receipt_email: email,
       metadata: { name },
-      payment_method_types: ['card'], // Only allow card for this USD endpoint
+      payment_method_types: ['card'],
     });
-    // --- END STRIPE UPDATE ---
+    // --- END STRIPE ---
 
+    // Save to DB
     const newDonation = new Donation({
       name,
       email,
       amount,
-      currency: currency, // <-- Save USD to DB
-      stripePaymentIntentId: paymentIntent.id,
+      currency: currency, // Save 'usd'
+      stripePaymentIntentId: paymentIntent.id, // Save Stripe ID
       status: 'Incomplete',
     });
     await newDonation.save();

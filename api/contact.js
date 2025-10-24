@@ -7,14 +7,12 @@ dotenv.config();
 // --- Database Connection ---
 const connectDB = async () => {
   try {
-    // Check if we're already connected
     if (mongoose.connection.readyState < 1) {
       await mongoose.connect(process.env.MONGODB_URI);
-      console.log('MongoDB Connected...');
+      console.log('MongoDB Connected (from contact)...'); // Added location
     }
   } catch (err) {
     console.error('MongoDB Connection Error:', err.message);
-    // Throw error to be caught by handler
     throw new Error('Database connection failed'); 
   }
 };
@@ -31,18 +29,27 @@ const contactSchema = new mongoose.Schema({
 // Create the model
 const Contact = mongoose.models.Contact || mongoose.model('Contact', contactSchema);
 
-// --- Helper function to set CORS headers ---
-const setCorsHeaders = (res) => {
-  // Allow requests from any origin (OK for development, can restrict in production)
-  res.setHeader('Access-Control-Allow-Origin', '*'); 
+// --- CORS Helper (NEW) ---
+const setCorsHeaders = (req, res) => {
+  const origin = req.headers.origin;
+  const allowedOrigins = [
+    'http://localhost:3000', // For vercel dev
+    'https://jukaneswebsite.vercel.app' // YOUR LIVE VERCEL URL
+    // Add your custom domain here later
+  ];
+
+  if (allowedOrigins.includes(origin)) {
+    res.setHeader('Access-Control-Allow-Origin', origin);
+  }
+  
   res.setHeader('Access-Control-Allow-Methods', 'POST, GET, OPTIONS');
-  res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
 };
 
 // --- Main Handler ---
 const handler = async (req, res) => {
-  // 1. Set CORS headers for ALL responses
-  setCorsHeaders(res);
+  // *** CORRECTION 1: Pass 'req' to the CORS function ***
+  setCorsHeaders(req, res); 
 
   // 2. Handle browser's pre-flight "OPTIONS" request
   if (req.method === 'OPTIONS') {
@@ -54,7 +61,6 @@ const handler = async (req, res) => {
     await connectDB();
   } catch (dbError) {
     console.error('DB Connection Error on request:', dbError.message);
-    // 4. Send JSON error
     return res.status(500).json({ msg: 'Database connection failed' });
   }
 
@@ -74,7 +80,6 @@ const handler = async (req, res) => {
       return res.status(201).json({ msg: 'Message received successfully!' });
     } catch (err) {
       console.error('Error saving contact:', err.message);
-      // 6. Send JSON error instead of text
       return res.status(500).json({ msg: 'Server error saving contact' });
     }
   }

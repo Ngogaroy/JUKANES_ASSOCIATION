@@ -29,16 +29,28 @@ const donationSchema = new mongoose.Schema({
 });
 const Donation = mongoose.models.Donation || mongoose.model('Donation', donationSchema);
 
-// --- CORS Helper ---
-const setCorsHeaders = (res) => {
-  res.setHeader('Access-Control-Allow-Origin', '*');
-  res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
-  res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
+// --- CORS Helper (NEW) ---
+const setCorsHeaders = (req, res) => {
+  const origin = req.headers.origin;
+  const allowedOrigins = [
+    'http://localhost:3000', // For vercel dev
+    'https://jukaneswebsite.vercel.app' // YOUR LIVE VERCEL URL
+    // Add your custom domain here later
+  ];
+
+  if (allowedOrigins.includes(origin)) {
+    res.setHeader('Access-Control-Allow-Origin', origin);
+  }
+  
+  res.setHeader('Access-Control-Allow-Methods', 'POST, GET, OPTIONS');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
 };
 
 // --- Main Handler ---
 const handler = async (req, res) => {
-  setCorsHeaders(res);
+  // *** CORRECTION 1: Pass 'req' to the CORS function ***
+  setCorsHeaders(req, res); 
+
   if (req.method === 'OPTIONS') return res.status(200).end();
   if (req.method !== 'POST') {
     return res.status(405).json({ msg: `Method ${req.method} Not Allowed` });
@@ -46,11 +58,16 @@ const handler = async (req, res) => {
 
   console.log('M-Pesa Callback Received:', JSON.stringify(req.body, null, 2));
 
-  // The STK Push callback payload
+  // Check if body and stkCallback exist
+  if (!req.body || !req.body.Body || !req.body.Body.stkCallback) {
+    console.warn('Invalid M-Pesa callback format received.');
+    // Still send 200 to Safaricom to stop retries
+    return res.status(200).json({ ResultCode: 1, ResultDesc: "Invalid format" }); 
+  }
+
   const callbackData = req.body.Body.stkCallback;
   
   // Send a success response to Safaricom immediately
-  // Safaricom doesn't wait for your database logic, it just needs a quick "OK"
   res.status(200).json({ ResultCode: 0, ResultDesc: "Accepted" });
 
   // --- Process the Callback Asynchronously ---
@@ -60,21 +77,14 @@ const handler = async (req, res) => {
     const resultCode = callbackData.ResultCode;
     const checkoutRequestID = callbackData.CheckoutRequestID;
     
-    let newStatus = 'Failed'; // Default to Failed
+    let newStatus = 'Failed M-Pesa'; // Default to Failed
     
     if (resultCode === 0) {
       // Payment was successful
       newStatus = 'Succeeded';
       console.log(`Payment Succeeded for CheckoutID: ${checkoutRequestID}`);
-      
-      // You can extract more details if needed
-      // const amount = callbackData.CallbackMetadata.Item.find(i => i.Name === 'Amount').Value;
-      // const mpesaReceipt = callbackData.CallbackMetadata.Item.find(i => i.Name === 'MpesaReceiptNumber').Value;
-      // const phone = callbackData.CallbackMetadata.Item.find(i => i.Name === 'PhoneNumber').Value;
-
     } else {
       // Payment failed or was cancelled
-      newStatus = 'Failed M-Pesa';
       console.log(`Payment Failed/Cancelled for CheckoutID: ${checkoutRequestID}. Reason: ${callbackData.ResultDesc}`);
     }
 

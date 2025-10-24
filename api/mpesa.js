@@ -1,6 +1,6 @@
 import mongoose from 'mongoose';
 import dotenv from 'dotenv';
-import axios from 'axios'; // We're using axios to make API requests
+import axios from 'axios';
 
 dotenv.config();
 
@@ -27,24 +27,34 @@ const connectDB = async () => {
   }
 };
 
-// --- Database Schema (Ensure it matches the one in api/donate.js) ---
+// --- Database Schema ---
 const donationSchema = new mongoose.Schema({
   name: { type: String, required: true },
   email: { type: String, required: true },
   amount: { type: String, required: true },
   currency: { type: String, required: true },
   status: { type: String, default: 'Pending' },
-  stripePaymentIntentId: { type: String }, // For Stripe
-  mpesaCheckoutRequestID: { type: String }, // For M-Pesa
+  stripePaymentIntentId: { type: String },
+  mpesaCheckoutRequestID: { type: String },
   createdAt: { type: Date, default: Date.now },
 });
 const Donation = mongoose.models.Donation || mongoose.model('Donation', donationSchema);
 
 // --- CORS Helper ---
-const setCorsHeaders = (res) => {
-  res.setHeader('Access-Control-Allow-Origin', '*');
-  res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
-  res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
+const setCorsHeaders = (req, res) => {
+  const origin = req.headers.origin;
+  const allowedOrigins = [
+    'http://localhost:3000', // For vercel dev
+    'https://jukaneswebsite.vercel.app' // YOUR LIVE VERCEL URL
+    // Add your custom domain here later, e.g., 'https://www.jukanes.org'
+  ];
+
+  if (allowedOrigins.includes(origin)) {
+    res.setHeader('Access-Control-Allow-Origin', origin);
+  }
+  
+  res.setHeader('Access-Control-Allow-Methods', 'POST, GET, OPTIONS');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
 };
 
 // --- M-Pesa Helper Functions ---
@@ -53,9 +63,7 @@ const getMpesaAuthToken = async () => {
   const auth = Buffer.from(`${mpesaConsumerKey}:${mpesaConsumerSecret}`).toString('base64');
   try {
     const response = await axios.get(mpesaAuthUrl, {
-      headers: {
-        Authorization: `Basic ${auth}`,
-      },
+      headers: { Authorization: `Basic ${auth}` },
     });
     return response.data.access_token;
   } catch (err) {
@@ -67,18 +75,25 @@ const getMpesaAuthToken = async () => {
 // 2. Format Timestamp (YYYYMMDDHHMMSS)
 const getTimestamp = () => {
   const date = new Date();
-  const year = date.getFullYear();
-  const month = (date.getMonth() + 1).toString().padStart(2, '0');
-  const day = date.getDate().toString().padStart(2, '0');
-  const hours = date.getHours().toString().padStart(2, '0');
-  const minutes = date.getMinutes().toString().padStart(2, '0');
-  const seconds = date.getSeconds().toString().padStart(2, '0');
+  // Adjust for EAT (East Africa Time, GMT+3)
+  // Vercel servers run on UTC.
+  const offset = 3 * 60 * 60 * 1000; // 3 hours in milliseconds
+  const eatDate = new Date(date.getTime() + offset);
+
+  const year = eatDate.getFullYear();
+  const month = (eatDate.getMonth() + 1).toString().padStart(2, '0');
+  const day = eatDate.getDate().toString().padStart(2, '0');
+  const hours = eatDate.getHours().toString().padStart(2, '0');
+  const minutes = eatDate.getMinutes().toString().padStart(2, '0');
+  const seconds = eatDate.getSeconds().toString().padStart(2, '0');
   return `${year}${month}${day}${hours}${minutes}${seconds}`;
 };
 
 // --- Main Handler ---
 const handler = async (req, res) => {
-  setCorsHeaders(res);
+  // *** CORRECTION 1: Pass 'req' to the CORS function ***
+  setCorsHeaders(req, res); 
+
   if (req.method === 'OPTIONS') return res.status(200).end();
   if (req.method !== 'POST') {
     return res.status(405).json({ msg: `Method ${req.method} Not Allowed` });
@@ -97,7 +112,6 @@ const handler = async (req, res) => {
     return res.status(400).json({ msg: 'Please enter all fields' });
   }
 
-  // Ensure phone is in format 254...
   let formattedPhone = mpesaPhone.trim();
   if (formattedPhone.startsWith('0')) {
     formattedPhone = '254' + formattedPhone.substring(1);
@@ -108,7 +122,6 @@ const handler = async (req, res) => {
     return res.status(400).json({ msg: 'Invalid phone number. Use 254... format.' });
   }
 
-  // Ensure amount is a whole number (M-Pesa doesn't use cents)
   const amountAsInt = Math.round(parseFloat(amount));
   if (isNaN(amountAsInt) || amountAsInt < 1) {
     return res.status(400).json({ msg: 'Invalid amount for M-Pesa' });
@@ -116,19 +129,14 @@ const handler = async (req, res) => {
 
   // --- 2. M-Pesa STK Push Steps ---
   try {
-    // Step A: Get Auth Token
     const token = await getMpesaAuthToken();
-
-    // Step B: Generate Timestamp and Password
     const timestamp = getTimestamp();
     const password = Buffer.from(
       `${mpesaShortCode}${mpesaPasskey}${timestamp}`
     ).toString('base64');
 
-    // Step C: Make STK Push Request
-    // IMPORTANT: Vercel gives you a unique URL. Use that for the CallBackURL.
-    // For local dev, vercel dev's URL works. For production, you must register the live URL.
-    const callBackURL = `https://jukaneswebsite.vercel.app///mpesa-callback`;
+    // *** CORRECTION 2: Removed extra slashes from URL ***
+    const callBackURL = `https://jukaneswebsite.vercel.app/api/mpesa-callback`;
     
     const stkPushResponse = await axios.post(
       mpesaStkPushUrl,
@@ -136,14 +144,14 @@ const handler = async (req, res) => {
         BusinessShortCode: mpesaShortCode,
         Password: password,
         Timestamp: timestamp,
-        TransactionType: 'CustomerPayBillOnline', // Or 'CustomerBuyGoodsOnline'
+        TransactionType: 'CustomerPayBillOnline',
         Amount: amountAsInt,
-        PartyA: formattedPhone, // User's phone
-        PartyB: mpesaShortCode, // Your paybill
-        PhoneNumber: formattedPhone, // User's phone
+        PartyA: formattedPhone,
+        PartyB: mpesaShortCode,
+        PhoneNumber: formattedPhone,
         CallBackURL: callBackURL,
-        AccountReference: 'JUKANES Donation', // Reference
-        TransactionDesc: 'Donation to JUKANES', // Description
+        AccountReference: 'JUKANES Donation',
+        TransactionDesc: 'Donation to JUKANES',
       },
       {
         headers: {
@@ -157,15 +165,14 @@ const handler = async (req, res) => {
     const { CheckoutRequestID, ResponseCode, CustomerMessage } = stkPushResponse.data;
 
     if (ResponseCode === '0') {
-      // STK Push was successfully *sent* (not *paid* yet)
-      // Save a pending donation to our DB
+      // STK Push was successfully *sent*
       const newDonation = new Donation({
         name,
         email,
         amount: amountAsInt.toString(),
         currency: 'kes',
         status: 'Pending M-Pesa',
-        mpesaCheckoutRequestID: CheckoutRequestID, // <-- Save this ID!
+        mpesaCheckoutRequestID: CheckoutRequestID,
       });
       await newDonation.save();
       

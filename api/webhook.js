@@ -1,4 +1,3 @@
-import express from 'express';
 import mongoose from 'mongoose';
 import dotenv from 'dotenv';
 import Stripe from 'stripe';
@@ -24,22 +23,38 @@ const connectDB = async () => {
 };
 
 // --- Database Model ---
-// We need to re-define the model here so the webhook can use it
 const donationSchema = new mongoose.Schema({
   name: { type: String, required: true },
   email: { type: String, required: true },
   amount: { type: String, required: true },
+  currency: { type: String, required: true }, // Added currency
   status: { type: String, default: 'Pending' },
-  stripePaymentIntentId: { type: String }, // This is the key we use to find the donation
+  stripePaymentIntentId: { type: String },
+  mpesaCheckoutRequestID: { type: String }, // Added M-Pesa ID
   createdAt: { type: Date, default: Date.now },
 });
 const Donation = mongoose.models.Donation || mongoose.model('Donation', donationSchema);
 
-// --- Webhook Handler ---
-// Vercel's body-parser is disabled for webhooks, so we need to get the raw body
+// --- CORS Helper (NEW) ---
+const setCorsHeaders = (req, res) => {
+  const origin = req.headers.origin;
+  const allowedOrigins = [
+    'http://localhost:3000', // For vercel dev
+    'https://jukaneswebsite.vercel.app' // YOUR LIVE VERCEL URL (add custom domains later)
+  ];
+
+  if (allowedOrigins.includes(origin)) {
+    res.setHeader('Access-Control-Allow-Origin', origin);
+  }
+  
+  res.setHeader('Access-Control-Allow-Methods', 'POST, GET, OPTIONS');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization, Stripe-Signature'); // Added Stripe-Signature
+};
+
+// --- Webhook Handler Config ---
 export const config = {
   api: {
-    bodyParser: false,
+    bodyParser: false, // We need the raw body for Stripe
   },
 };
 
@@ -54,7 +69,13 @@ const buffer = (req) => {
 };
 
 const handler = async (req, res) => {
-  // We only care about POST requests
+  // *** ADDED CORS CALL (req, res) ***
+  setCorsHeaders(req, res);
+
+  if (req.method === 'OPTIONS') {
+    return res.status(200).end();
+  }
+
   if (req.method !== 'POST') {
     res.setHeader('Allow', 'POST');
     return res.status(405).end('Method Not Allowed');
@@ -75,7 +96,6 @@ const handler = async (req, res) => {
 
   // 2. Handle the event
   switch (event.type) {
-    // This event fires when the payment is fully successful
     case 'payment_intent.succeeded':
       const paymentIntent = event.data.object;
       console.log('PaymentIntent Succeeded:', paymentIntent.id);
@@ -83,11 +103,11 @@ const handler = async (req, res) => {
       try {
         await connectDB();
         
-        // 3. Find the donation in our database using the Payment Intent ID
+        // 3. Find and update the donation status
         const donation = await Donation.findOneAndUpdate(
           { stripePaymentIntentId: paymentIntent.id },
-          { status: 'Succeeded' }, // 4. Update its status
-          { new: true } // Return the updated document
+          { status: 'Succeeded' },
+          { new: true }
         );
 
         if (donation) {
@@ -101,11 +121,8 @@ const handler = async (req, res) => {
       }
       break;
 
-    // You can handle other events here, like 'payment_intent.payment_failed'
     case 'payment_intent.payment_failed':
-      const paymentFailedIntent = event.data.object;
-      console.log('PaymentIntent Failed:', paymentFailedIntent.id);
-      // You could find the donation and update its status to "Failed"
+      // ... (handle failed payments) ...
       break;
 
     default:
