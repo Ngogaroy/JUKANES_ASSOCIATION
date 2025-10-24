@@ -128,7 +128,7 @@ const handler = async (req, res) => {
     // Step C: Make STK Push Request
     // IMPORTANT: Vercel gives you a unique URL. Use that for the CallBackURL.
     // For local dev, vercel dev's URL works. For production, you must register the live URL.
-    const callBackURL = `https://YOUR_VERCEL_PROJECT_URL.vercel.app/api/mpesa-callback`;
+    const callBackURL = `https://jukaneswebsite.vercel.app///mpesa-callback`;
     
     const stkPushResponse = await axios.post(
       mpesaStkPushUrl,
