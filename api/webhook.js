@@ -1,13 +1,14 @@
 import mongoose from 'mongoose';
 import dotenv from 'dotenv';
 import Stripe from 'stripe';
+import { Resend } from 'resend'; // 1. Import Resend
 
-// Load environment variables
 dotenv.config();
 
-// Initialize Stripe and get secrets
+// 2. Initialize Resend and Stripe
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
 const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET;
+const resend = new Resend(process.env.RESEND_API_KEY);
 
 // --- Database Connection ---
 const connectDB = async () => {
@@ -22,33 +23,31 @@ const connectDB = async () => {
   }
 };
 
-// --- Database Model ---
+// --- Database Schema (Unified) ---
 const donationSchema = new mongoose.Schema({
   name: { type: String, required: true },
   email: { type: String, required: true },
   amount: { type: String, required: true },
-  currency: { type: String, required: true }, // Added currency
+  currency: { type: String, required: true },
   status: { type: String, default: 'Pending' },
   stripePaymentIntentId: { type: String },
-  mpesaCheckoutRequestID: { type: String }, // Added M-Pesa ID
+  mpesaCheckoutRequestID: { type: String },
   createdAt: { type: Date, default: Date.now },
 });
 const Donation = mongoose.models.Donation || mongoose.model('Donation', donationSchema);
 
-// --- CORS Helper (NEW) ---
+// --- CORS Helper ---
 const setCorsHeaders = (req, res) => {
   const origin = req.headers.origin;
   const allowedOrigins = [
-    'http://localhost:3000', // For vercel dev
-    'https://jukaneswebsite.vercel.app' // YOUR LIVE VERCEL URL (add custom domains later)
+    'http://localhost:3000',
+    'https://jukaneswebsite.vercel.app'
   ];
-
   if (allowedOrigins.includes(origin)) {
     res.setHeader('Access-Control-Allow-Origin', origin);
   }
-  
   res.setHeader('Access-Control-Allow-Methods', 'POST, GET, OPTIONS');
-  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization, Stripe-Signature'); // Added Stripe-Signature
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization, Stripe-Signature');
 };
 
 // --- Webhook Handler Config ---
@@ -68,8 +67,8 @@ const buffer = (req) => {
   });
 };
 
+// --- Main Handler ---
 const handler = async (req, res) => {
-  // *** ADDED CORS CALL (req, res) ***
   setCorsHeaders(req, res);
 
   if (req.method === 'OPTIONS') {
@@ -83,7 +82,6 @@ const handler = async (req, res) => {
 
   const reqBuffer = await buffer(req);
   const sig = req.headers['stripe-signature'];
-
   let event;
 
   // 1. Verify the event came from Stripe
@@ -94,39 +92,58 @@ const handler = async (req, res) => {
     return res.status(400).send(`Webhook Error: ${err.message}`);
   }
 
-  // 2. Handle the event
-  switch (event.type) {
-    case 'payment_intent.succeeded':
-      const paymentIntent = event.data.object;
-      console.log('PaymentIntent Succeeded:', paymentIntent.id);
+  // 2. Handle the 'payment_intent.succeeded' event
+  if (event.type === 'payment_intent.succeeded') {
+    const paymentIntent = event.data.object;
+    console.log('PaymentIntent Succeeded:', paymentIntent.id);
 
-      try {
-        await connectDB();
+    try {
+      await connectDB();
+      
+      // 3. Find the donation in our DB
+      const donation = await Donation.findOneAndUpdate(
+        { stripePaymentIntentId: paymentIntent.id },
+        { status: 'Succeeded' },
+        { new: true } // Return the updated document
+      );
+
+      if (donation) {
+        console.log('Donation status updated to "Succeeded" for:', donation.email);
         
-        // 3. Find and update the donation status
-        const donation = await Donation.findOneAndUpdate(
-          { stripePaymentIntentId: paymentIntent.id },
-          { status: 'Succeeded' },
-          { new: true }
-        );
-
-        if (donation) {
-          console.log('Donation status updated to "Succeeded" for:', donation.email);
-        } else {
-          console.warn(`Webhook received for unknown PaymentIntent: ${paymentIntent.id}`);
+        // 4. --- SEND THANK YOU EMAIL ---
+        try {
+          await resend.emails.send({
+            from: 'onboarding@resend.dev', // Use Resend's required "from"
+            to: donation.email, // The donor's email from the DB record
+            subject: 'Thank you for your donation to JUKANES Association!',
+            html: `
+              <div>
+                <h1>Thank You, ${donation.name}!</h1>
+                <p>We've successfully received your generous donation of <strong>${donation.amount} ${donation.currency.toUpperCase()}</strong>.</p>
+                <p>Your support helps us continue our mission to restore hope, love, and belonging to vulnerable individuals. We truly couldn't do this without you.</p>
+                <p>We keep you smiling!</p>
+                <br>
+                <p>With gratitude,</p>
+                <p>The JUKANES Association Family</p>
+              </div>
+            `,
+          });
+          console.log('Donor confirmation email sent to:', donation.email);
+        } catch (emailError) {
+          console.error('Error sending donor email:', emailError.message);
+          // Don't block the webhook, just log the error
         }
-        
-      } catch (err) {
-        console.error('Error updating donation in DB:', err.message);
+        // --- END OF EMAIL ---
+
+      } else {
+        console.warn(`Webhook received for unknown PaymentIntent: ${paymentIntent.id}`);
       }
-      break;
-
-    case 'payment_intent.payment_failed':
-      // ... (handle failed payments) ...
-      break;
-
-    default:
-      console.log(`Unhandled event type: ${event.type}`);
+      
+    } catch (err) {
+      console.error('Error in payment_intent.succeeded handler:', err.message);
+    }
+  } else {
+    console.log(`Unhandled event type: ${event.type}`);
   }
 
   // 5. Send a 200 OK response back to Stripe

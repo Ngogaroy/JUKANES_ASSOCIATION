@@ -1,7 +1,11 @@
 import mongoose from 'mongoose';
 import dotenv from 'dotenv';
+import { Resend } from 'resend'; // 1. Import Resend
 
 dotenv.config();
+
+// 2. Initialize Resend
+const resend = new Resend(process.env.RESEND_API_KEY);
 
 // --- Database Connection ---
 const connectDB = async () => {
@@ -24,33 +28,28 @@ const donationSchema = new mongoose.Schema({
   currency: { type: String, required: true },
   status: { type: String, default: 'Pending' },
   stripePaymentIntentId: { type: String },
-  mpesaCheckoutRequestID: { type: String }, // This is the ID we use
+  mpesaCheckoutRequestID: { type: String },
   createdAt: { type: Date, default: Date.now },
 });
 const Donation = mongoose.models.Donation || mongoose.model('Donation', donationSchema);
 
-// --- CORS Helper (NEW) ---
+// --- CORS Helper ---
 const setCorsHeaders = (req, res) => {
   const origin = req.headers.origin;
   const allowedOrigins = [
-    'http://localhost:3000', // For vercel dev
-    'https://jukaneswebsite.vercel.app' // YOUR LIVE VERCEL URL
-    // Add your custom domain here later
+    'http://localhost:3000',
+    'https://jukaneswebsite.vercel.app'
   ];
-
   if (allowedOrigins.includes(origin)) {
     res.setHeader('Access-Control-Allow-Origin', origin);
   }
-  
   res.setHeader('Access-Control-Allow-Methods', 'POST, GET, OPTIONS');
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
 };
 
 // --- Main Handler ---
 const handler = async (req, res) => {
-  // *** CORRECTION 1: Pass 'req' to the CORS function ***
-  setCorsHeaders(req, res); 
-
+  setCorsHeaders(req, res);
   if (req.method === 'OPTIONS') return res.status(200).end();
   if (req.method !== 'POST') {
     return res.status(405).json({ msg: `Method ${req.method} Not Allowed` });
@@ -58,10 +57,8 @@ const handler = async (req, res) => {
 
   console.log('M-Pesa Callback Received:', JSON.stringify(req.body, null, 2));
 
-  // Check if body and stkCallback exist
   if (!req.body || !req.body.Body || !req.body.Body.stkCallback) {
     console.warn('Invalid M-Pesa callback format received.');
-    // Still send 200 to Safaricom to stop retries
     return res.status(200).json({ ResultCode: 1, ResultDesc: "Invalid format" }); 
   }
 
@@ -77,33 +74,57 @@ const handler = async (req, res) => {
     const resultCode = callbackData.ResultCode;
     const checkoutRequestID = callbackData.CheckoutRequestID;
     
-    let newStatus = 'Failed M-Pesa'; // Default to Failed
+    let newStatus = 'Failed M-Pesa';
+    let isSuccess = false;
     
     if (resultCode === 0) {
-      // Payment was successful
       newStatus = 'Succeeded';
+      isSuccess = true;
       console.log(`Payment Succeeded for CheckoutID: ${checkoutRequestID}`);
     } else {
-      // Payment failed or was cancelled
       console.log(`Payment Failed/Cancelled for CheckoutID: ${checkoutRequestID}. Reason: ${callbackData.ResultDesc}`);
     }
 
-    // Find the donation in our database using the CheckoutRequestID
+    // Find the donation and update its status
     const updatedDonation = await Donation.findOneAndUpdate(
       { mpesaCheckoutRequestID: checkoutRequestID },
-      { status: newStatus }, // Update its status
-      { new: true } // Return the updated document
+      { status: newStatus },
+      { new: true }
     );
     
-    if (updatedDonation) {
-        console.log(`Donation status updated to "${newStatus}" for ID: ${checkoutRequestID}`);
-    } else {
+    // 3. --- SEND EMAIL IF SUCCESSFUL ---
+    if (updatedDonation && isSuccess) {
+        console.log(`Donation status updated to "Succeeded" for ID: ${checkoutRequestID}`);
+
+        try {
+          await resend.emails.send({
+            from: 'onboarding@resend.dev', // Use Resend's required "from"
+            to: updatedDonation.email, // The donor's email from the DB record
+            subject: 'Thank you for your donation to JUKANES Association!',
+            html: `
+              <div>
+                <h1>Thank You, ${updatedDonation.name}!</h1>
+                <p>We've successfully received your generous M-Pesa donation of <strong>${updatedDonation.amount} ${updatedDonation.currency.toUpperCase()}</strong>.</p>
+                <p>Your support helps us continue our mission to restore hope, love, and belonging to vulnerable individuals. We truly couldn't do this without you.</p>
+                <p>We keep you smiling!</p>
+                <br>
+                <p>With gratitude,</p>
+                <p>The JUKANES Association Family</p>
+              </div>
+            `,
+          });
+          console.log('Donor confirmation email sent to:', updatedDonation.email);
+        } catch (emailError) {
+          console.error('Error sending donor email:', emailError.message);
+        }
+        // --- END OF EMAIL ---
+        
+    } else if (!updatedDonation) {
         console.warn(`Callback received for unknown CheckoutID: ${checkoutRequestID}`);
     }
 
   } catch (err) {
     console.error('Error processing M-Pesa callback:', err.message);
-    // We already sent a 200, so we just log the error
   }
 };
 

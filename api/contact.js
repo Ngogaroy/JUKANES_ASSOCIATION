@@ -76,7 +76,7 @@ const handler = async (req, res) => {
       // For now, use their "onboarding" address as a placeholder.
       // You must verify your 'jukanesassociation@gmail.com' in Resend to use it as 'to'.
       from: 'onboarding@resend.dev', 
-      to: 'jukanessassociation@gmail.com', // Your email
+      to: 'jukanesassociation@gmail.com', // Your email
       subject: `New JUKANES Contact Form: ${subject}`,
       html: `
         <div>
