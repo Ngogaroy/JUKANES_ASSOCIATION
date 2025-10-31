@@ -8,4 +8,7 @@ export default defineConfig({
     react(),
     tailwindcss(), // <-- Add the Tailwind Vite plugin here
   ],
+  define: {
+      'process.env.NODE_ENV': JSON.stringify(mode),
+    },
 });
