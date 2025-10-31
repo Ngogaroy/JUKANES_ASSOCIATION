@@ -3,16 +3,19 @@ import react from '@vitejs/plugin-react';
 import tailwindcss from '@tailwindcss/vite';
 
 // https://vitejs.dev/config/
-export default defineConfig(({ mode }) => { // <-- Change this to a function
-  return { // <-- Add 'return {'
+export default defineConfig(({ mode }) => {
+  return {
     plugins: [
       react(),
       tailwindcss(),
-    ], // <-- Close the plugins array here
-
-    // 'define' must be a top-level key, outside of 'plugins'
+    ],
+    
+    // This is the new, correct 'define' block
     define: {
-      'process.env.NODE_ENV': JSON.stringify(mode),
+      'process.env': {
+        NODE_ENV: JSON.stringify(mode),
+        // You can add any other env vars here if needed
+      }
     },
-  }; // <-- Close the returned object
-}); // <-- Close the function
+  };
+});
