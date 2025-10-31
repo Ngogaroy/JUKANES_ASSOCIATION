@@ -1,15 +1,18 @@
 import mongoose from 'mongoose';
 import dotenv from 'dotenv';
+import { Resend } from 'resend'; // 1. Import Resend
 
-// Load environment variables
 dotenv.config();
+
+// 2. Initialize Resend with your API key
+const resend = new Resend(process.env.RESEND_API_KEY);
 
 // --- Database Connection ---
 const connectDB = async () => {
   try {
     if (mongoose.connection.readyState < 1) {
       await mongoose.connect(process.env.MONGODB_URI);
-      console.log('MongoDB Connected (from contact)...'); // Added location
+      console.log('MongoDB Connected (from contact)...');
     }
   } catch (err) {
     console.error('MongoDB Connection Error:', err.message);
@@ -17,7 +20,7 @@ const connectDB = async () => {
   }
 };
 
-// --- Database Schema (The data structure) ---
+// --- Database Schema ---
 const contactSchema = new mongoose.Schema({
   name: { type: String, required: true },
   email: { type: String, required: true },
@@ -25,68 +28,78 @@ const contactSchema = new mongoose.Schema({
   message: { type: String, required: true },
   submittedAt: { type: Date, default: Date.now },
 });
-
-// Create the model
 const Contact = mongoose.models.Contact || mongoose.model('Contact', contactSchema);
 
-// --- CORS Helper (NEW) ---
+// --- CORS Helper ---
 const setCorsHeaders = (req, res) => {
   const origin = req.headers.origin;
   const allowedOrigins = [
-    'http://localhost:3000', // For vercel dev
-    'https://jukaneswebsite.vercel.app' // YOUR LIVE VERCEL URL
-    // Add your custom domain here later
+    'http://localhost:3000',
+    'https://jukaneswebsite.vercel.app'
   ];
-
   if (allowedOrigins.includes(origin)) {
     res.setHeader('Access-Control-Allow-Origin', origin);
   }
-  
   res.setHeader('Access-Control-Allow-Methods', 'POST, GET, OPTIONS');
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
 };
 
 // --- Main Handler ---
 const handler = async (req, res) => {
-  // *** CORRECTION 1: Pass 'req' to the CORS function ***
   setCorsHeaders(req, res); 
-
-  // 2. Handle browser's pre-flight "OPTIONS" request
   if (req.method === 'OPTIONS') {
     return res.status(200).end();
   }
 
-  // 3. Ensure DB is connected
+  // Only allow POST
+  if (req.method !== 'POST') {
+    res.setHeader('Allow', ['POST', 'OPTIONS']);
+    return res.status(405).json({ msg: `Method ${req.method} Not Allowed` });
+  }
+
+  const { name, email, subject, message } = req.body;
+
+  if (!name || !email || !subject || !message) {
+    return res.status(400).json({ msg: 'Please enter all fields' });
+  }
+
   try {
+    // 3. --- Save to Database (First Task) ---
     await connectDB();
-  } catch (dbError) {
-    console.error('DB Connection Error on request:', dbError.message);
-    return res.status(500).json({ msg: 'Database connection failed' });
+    const newContact = new Contact({ name, email, subject, message });
+    await newContact.save();
+    console.log('Contact saved to MongoDB:', newContact);
+
+    // 4. --- Send Email (Second Task) ---
+    await resend.emails.send({
+      // NOTE: Resend's free plan requires emails to come from a verified domain.
+      // For now, use their "onboarding" address as a placeholder.
+      // You must verify your 'jukanesassociation@gmail.com' in Resend to use it as 'to'.
+      from: 'onboarding@resend.dev', 
+      to: 'jukanessassociation@gmail.com', // Your email
+      subject: `New JUKANES Contact Form: ${subject}`,
+      html: `
+        <div>
+          <h2>New Message from JUKANES Website</h2>
+          <p>You have received a new contact form submission.</p>
+          <hr>
+          <p><strong>Name:</strong> ${name}</p>
+          <p><strong>Email:</strong> ${email}</p>
+          <p><strong>Subject:</strong> ${subject}</p>
+          <p><strong>Message:</strong></p>
+          <p style="white-space: pre-wrap;">${message}</p>
+        </div>
+      `,
+    });
+    console.log('Email notification sent via Resend.');
+
+    // 5. --- Send Success Response ---
+    return res.status(201).json({ msg: 'Message received successfully!' });
+
+  } catch (err) {
+    console.error('Error in contact API:', err.message);
+    return res.status(500).json({ msg: 'Server error' });
   }
-
-  // 5. Handle the actual form submission
-  if (req.method === 'POST') {
-    const { name, email, subject, message } = req.body;
-
-    if (!name || !email || !subject || !message) {
-      return res.status(400).json({ msg: 'Please enter all fields' });
-    }
-
-    try {
-      const newContact = new Contact({ name, email, subject, message });
-      await newContact.save();
-      
-      console.log('Contact saved:', newContact);
-      return res.status(201).json({ msg: 'Message received successfully!' });
-    } catch (err) {
-      console.error('Error saving contact:', err.message);
-      return res.status(500).json({ msg: 'Server error saving contact' });
-    }
-  }
-  
-  // Handle any other methods (like GET)
-  res.setHeader('Allow', ['POST', 'OPTIONS']);
-  return res.status(405).json({ msg: `Method ${req.method} Not Allowed` });
 };
 
 export default handler;

@@ -55,7 +55,37 @@ h1, h2, h3, h4, h5, h6 {
    color: #fff; /* White arrow on hover */
 }
 
-/* Position adjustments if needed */
-.swiper-button-prev { left: 20px !important; }
-.swiper-button-next { right: 20px !important; }
+/* --- Custom Swiper Styles --- */
+.hero-swiper .swiper-button-prev,
+.hero-swiper .swiper-button-next {
+  color: #2e4057; /* JUKANES Dark */
+  background-color: rgba(255, 255, 255, 0.7); /* Semi-transparent white */
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  transition: background-color 0.2s ease;
+  display: flex; /* Make sure they are visible */
+}
+.hero-swiper .swiper-button-prev:hover,
+.hero-swiper .swiper-button-next:hover {
+  background-color: white;
+  color: #20a39e; /* JUKANES Teal */
+}
+.hero-swiper .swiper-button-prev::after,
+.hero-swiper .swiper-button-next::after {
+  font-size: 1.5rem; /* Make arrow icon bigger */
+  font-weight: bold;
+}
 
+/* Pagination Dots */
+.hero-swiper .swiper-pagination-bullet {
+  width: 10px;
+  height: 10px;
+  background-color: rgba(46, 64, 87, 0.5); /* JUKANES Dark, semi-transparent */
+  opacity: 1;
+  transition: background-color 0.2s ease;
+}
+.hero-swiper .swiper-pagination-bullet-active {
+  background-color: #ffc72c; /* JUKANES Yellow */
+  border: 1px solid #2e4057; /* Dark border */
+}

@@ -1,75 +1,73 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { FaSpinner } from 'react-icons/fa'; // For loading icon
+import { FaSpinner } from 'react-icons/fa';
 
 const AdminDashboard = () => {
   const navigate = useNavigate();
-  const [donations, setDonations] = useState([]); // State to hold donation data
-  const [contacts, setContacts] = useState([]); // State for contact messages (for later)
+  const [donations, setDonations] = useState([]);
+  const [contacts, setContacts] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
 
-  // This `useEffect` hook runs when the page loads
-  useEffect(() => {
-    // 1. --- Security Check ---
-    // Get the "auth token" we saved in session storage on the login page
-    const auth = sessionStorage.getItem('jukanes-admin-auth');
-    // This is the same hardcoded password from the login page
-    const SUPER_SECRET_PASSWORD = "jukanesadmin123"; 
+  const SUPER_SECRET_PASSWORD = "jukanesadmin123"; // Your secret password
 
+  useEffect(() => {
+    // 1. Security Check
+    const auth = sessionStorage.getItem('jukanes-admin-auth');
     if (auth !== 'true') {
-      // If the user is not "logged in", send them back to the login page
       navigate('/admin-login');
-      return; // Stop running the rest of the code
+      return;
     }
 
-    // 2. --- Data Fetching ---
-    const fetchDonations = async () => {
+    // 2. Data Fetching
+    const fetchData = async () => {
+      setIsLoading(true);
+      setError(null);
       try {
-        setIsLoading(true);
-        setError(null);
-        
-        // Fetch data from our new API endpoint
-        const response = await fetch('/api/donations', {
+        // --- Fetch Donations ---
+        const donationsRes = await fetch('/api/donations', {
           method: 'GET',
-          headers: {
-            // 3. Send the secret password in the Authorization header
-            'Authorization': `Bearer ${SUPER_SECRET_PASSWORD}`
-          }
+          headers: { 'Authorization': `Bearer ${SUPER_SECRET_PASSWORD}` }
         });
-
-        if (!response.ok) {
-          // If the API sends an error (like 401 Unauthorized)
-          throw new Error('Failed to fetch data. Check credentials.');
+        if (!donationsRes.ok) {
+          const errData = await donationsRes.json();
+          throw new Error(`Failed to fetch donations: ${errData.msg || donationsRes.statusText}`);
         }
+        const donationsResult = await donationsRes.json();
+        setDonations(donationsResult.data);
 
-        const result = await response.json();
-        setDonations(result.data); // Save the donation data in our state
+        // --- Fetch Contacts ---
+        const contactsRes = await fetch('/api/contacts', {
+          method: 'GET',
+          headers: { 'Authorization': `Bearer ${SUPER_SECRET_PASSWORD}` }
+        });
+        if (!contactsRes.ok) {
+           const errData = await contactsRes.json();
+          throw new Error(`Failed to fetch contacts: ${errData.msg || contactsRes.statusText}`);
+        }
+        const contactsResult = await contactsRes.json();
+        setContacts(contactsResult.data);
+        
       } catch (err) {
         setError(err.message);
       } finally {
-        setIsLoading(false); // Stop loading
+        setIsLoading(false);
       }
     };
 
-    fetchDonations();
-    // TODO: We will add fetchContacts() here later
-
-  }, [navigate]); // Dependency array
+    fetchData();
+  }, [navigate]);
 
   const handleLogout = () => {
     sessionStorage.removeItem('jukanes-admin-auth');
     navigate('/admin-login');
   };
 
-  // Helper to format the date
   const formatDate = (dateString) => {
+    if (!dateString) return 'No date';
     return new Date(dateString).toLocaleString('en-US', {
-      year: 'numeric',
-      month: 'short',
-      day: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit'
+      year: 'numeric', month: 'short', day: 'numeric',
+      hour: '2-digit', minute: '2-digit'
     });
   };
 
@@ -93,22 +91,24 @@ const AdminDashboard = () => {
       </header>
 
       {/* Main Content Area */}
-      <main className="container mx-auto p-4 sm:p-6 lg:p-8">
+      <main className="container mx-auto p-4 sm:p-6 lg:p-8 space-y-8">
         
-        {/* Loading and Error States */}
+        {/* Loading State */}
         {isLoading && (
           <div className="flex justify-center items-center p-12">
             <FaSpinner className="animate-spin text-4xl text-[#20a39e]" />
             <span className="ml-4 text-lg text-[#797e88]">Loading Data...</span>
           </div>
         )}
+        
+        {/* Error State */}
         {error && (
           <div className="p-4 mb-4 text-center text-red-700 bg-red-100 rounded-lg">
             <strong>Error:</strong> {error}
           </div>
         )}
 
-        {/* 4. --- Donation Table --- */}
+        {/* --- Donation Table --- */}
         {!isLoading && !error && (
           <div className="p-6 bg-white rounded-lg shadow">
             <h2 className="text-xl font-semibold font-heading text-[#2e4057] mb-4">
@@ -130,28 +130,18 @@ const AdminDashboard = () => {
                     donations.map((donation) => (
                       <tr key={donation._id}>
                         <td className="px-6 py-4 whitespace-nowrap">
-                          {donation.status === 'Succeeded' ? (
-                            <span className="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800">
-                              Succeeded
-                            </span>
-                          ) : (
-                            <span className="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-yellow-100 text-yellow-800">
-                              {donation.status}
-                            </span>
-                          )}
+                          <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${
+                            donation.status === 'Succeeded' ? 'bg-green-100 text-green-800' : 
+                            donation.status === 'Pending M-Pesa' ? 'bg-yellow-100 text-yellow-800' :
+                            'bg-gray-100 text-gray-800'
+                          }`}>
+                            {donation.status}
+                          </span>
                         </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-[#797e88]">
-                          {formatDate(donation.createdAt)}
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-[#2e4057]">
-                          {donation.name}
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-[#797e88]">
-                          {donation.email}
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-[#2e4057]">
-                          {donation.amount} {donation.currency.toUpperCase()}
-                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-[#797e88]">{formatDate(donation.createdAt)}</td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-[#2e4057]">{donation.name}</td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-[#797e88]">{donation.email}</td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-[#2e4057]">{donation.amount} {donation.currency?.toUpperCase() || ''}</td>
                       </tr>
                     ))
                   ) : (
@@ -165,7 +155,44 @@ const AdminDashboard = () => {
           </div>
         )}
         
-        {/* We will add the Contact Messages table here later */}
+        {/* --- Contact Messages Table --- */}
+        {!isLoading && !error && (
+          <div className="p-6 bg-white rounded-lg shadow">
+            <h2 className="text-xl font-semibold font-heading text-[#2e4057] mb-4">
+              Contact Messages
+            </h2>
+            <div className="overflow-x-auto">
+              <table className="min-w-full divide-y divide-gray-200">
+                <thead className="bg-gray-50">
+                  <tr>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-[#2e4057] uppercase tracking-wider">Date</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-[#2e4057] uppercase tracking-wider">Name</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-[#2e4057] uppercase tracking-wider">Email</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-[#2e4057] uppercase tracking-wider">Subject</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-[#2e4057] uppercase tracking-wider">Message</th>
+                  </tr>
+                </thead>
+                <tbody className="bg-white divide-y divide-gray-200">
+                  {contacts.length > 0 ? (
+                    contacts.map((contact) => (
+                      <tr key={contact._id}>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-[#797e88]">{formatDate(contact.submittedAt)}</td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-[#2e4057]">{contact.name}</td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-[#797e88]">{contact.email}</td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-[#2e4057]">{contact.subject}</td>
+                        <td className="px-6 py-4 text-sm text-[#797e88] whitespace-pre-wrap max-w-sm">{contact.message}</td>
+                      </tr>
+                    ))
+                  ) : (
+                    <tr>
+                      <td colSpan="5" className="px-6 py-4 text-center text-[#797e88]">No contact messages found.</td>
+                    </tr>
+                  )}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        )}
 
       </main>
     </div>

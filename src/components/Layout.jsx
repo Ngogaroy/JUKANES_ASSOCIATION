@@ -2,9 +2,10 @@ import React from 'react';
 import { Outlet } from 'react-router-dom'; // Renders the matched page component
 import Topbar from './Topbar';
 import Navbar from './Navbar';
-import Newsletter from './Newsletter'; // The styled newsletter section
 import Footer from './Footer'; // The styled footer
 import BackToTopButton from './BackToTopButton'; // The styled back-to-top button
+
+// We no longer import Newsletter here
 
 const Layout = () => {
   return (
@@ -16,7 +17,7 @@ const Layout = () => {
         {/* Component for the current route (Home, About, etc.) renders here */}
         <Outlet />
       </main>
-      <Newsletter /> {/* Appears above the Footer */}
+      {/* Newsletter component is removed, as it's replaced by the Final CTA on the Home page */}
       <Footer /> {/* Appears at the bottom */}
       <BackToTopButton /> {/* Positioned fixed, usually bottom-right */}
     </div>
