@@ -2,116 +2,76 @@ import React from 'react';
 import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
 
-// 1. Import Swiper (including Navigation and Pagination)
-import { Swiper, SwiperSlide } from 'swiper/react';
-import { Navigation, Autoplay, EffectFade, Pagination } from 'swiper/modules';
-import 'swiper/css';
-import 'swiper/css/navigation';
-import 'swiper/css/pagination';
-import 'swiper/css/effect-fade';
-import 'swiper/css/autoplay';
+// Animation variants for a simple fade-in-up effect
+const fadeInUp = {
+  hidden: { opacity: 0, y: 20 },
+  visible: { opacity: 1, y: 0 }
+};
 
 const HeroSection = () => {
-  // Button Styles
-  const btnAccent = "inline-block bg-[#ff6b6b] text-white font-semibold py-3 px-6 rounded hover:bg-opacity-80 transition-colors duration-200";
-  // The 'Get Involved' button is now a ghost button with a white border
-  const btnGhost = "inline-block bg-transparent border-2 border-white text-white font-semibold py-3 px-6 rounded hover:bg-white hover:text-[#2e4057] transition-colors duration-200";
+  // Using your button styles
+  const btnAccent = "inline-block bg-[#ff6b6b] text-white font-semibold py-3 px-6 rounded-lg hover:bg-opacity-80 transition-colors duration-200 shadow-md hover:shadow-lg";
+  const btnGhost = "inline-block bg-transparent border-2 border-gray-300 text-gray-700 font-semibold py-3 px-6 rounded-lg hover:bg-gray-100 transition-colors duration-200";
 
   return (
-    <div className="relative w-full h-[70vh] min-h-[500px] lg:h-[80vh] overflow-hidden">
-      <Swiper
-        // 2. Add ALL modules
-        modules={[Navigation, Autoplay, EffectFade, Pagination]}
-        spaceBetween={0}
-        slidesPerView={1}
-        loop={true}
-        effect="fade"
-        autoplay={{
-          delay: 5000,
-          disableOnInteraction: false
-        }}
-        navigation={true} // <-- Show navigation arrows
-        pagination={{ clickable: true }} // <-- Show pagination dots
-        className="w-full h-full relative hero-swiper" // Custom class for styling
-      >
-        {/* Slide 1 - Using an Image */}
-        <SwiperSlide>
-          <div className="relative w-full h-full flex items-center justify-center text-center">
-            {/* TODO: Replace '/img/carousel-1.jpg' with your actual hero image */}
-            <img src="/img/carousel-1.jpg" alt="JUKANES children smiling" className="absolute z-0 w-auto min-w-full min-h-full max-w-none object-cover" />
-            <div className="absolute inset-0 z-10 bg-black/40"></div> {/* Dark overlay */}
+    <section className="bg-white"> {/* Or a very light gray like bg-gray-50 */}
+      <div className="container mx-auto px-6 py-16 md:py-24 lg:py-32">
+        <div className="flex flex-col lg:flex-row items-center gap-12 lg:gap-16">
+          
+          {/* 1. Text Content (Takes 60% width on large screens) */}
+          <div className="w-full lg:w-3/5 text-center lg:text-left">
+            <motion.h1
+              initial="hidden"
+              animate="visible"
+              variants={fadeInUp}
+              transition={{ duration: 0.5, delay: 0.1 }}
+              className="text-4xl md:text-5xl lg:text-6xl font-bold text-gray-800 font-heading mb-6"
+            >
+              Empowering communities, one life at a time.
+            </motion.h1>
             
-            <div className="relative z-20 container mx-auto px-4 sm:px-6 lg:px-8 text-white">
-              <motion.h1
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.8, delay: 0.2 }}
-                className="text-4xl md:text-5xl lg:text-7xl font-bold font-heading mb-6"
-              >
-                A world where every vulnerable person feels seen, valued, and loved.
-              </motion.h1>
-              <motion.p
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.8, delay: 0.4 }}
-                className="text-lg md:text-xl max-w-3xl mx-auto mb-8"
-              >
-                We are a family, not just an NGO. We bring emotional, spiritual, and material support to vulnerable individuals by creating safe, joyful spaces that restore hope and belonging.
-              </motion.p>
-              <motion.div
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.8, delay: 0.6 }}
-                className="flex flex-wrap justify-center gap-4"
-              >
-                <Link to="/donate" className={btnAccent}>Support Our Mission</Link>
-                <Link to="/contact" className={btnGhost}>Get Involved</Link>
-              </motion.div>
-            </div>
-          </div>
-        </SwiperSlide>
+            <motion.p
+              initial="hidden"
+              animate="visible"
+              variants={fadeInUp}
+              transition={{ duration: 0.5, delay: 0.3 }}
+              className="text-lg md:text-xl text-gray-600 max-w-2xl mx-auto lg:mx-0 mb-8"
+            >
+              We are dedicated to providing sustainable solutions for education,
+              health, and economic opportunity to those who need it most.
+            </motion.p>
 
-        {/* Slide 2 - Using another Image */}
-        <SwiperSlide>
-          <div className="relative w-full h-full flex items-center justify-center text-center">
-            {/* TODO: Replace '/img/carousel-2.jpg' with your second hero image */}
-            <img src="/img/carousel-2.jpg" alt="JUKANES community work" className="absolute z-0 w-auto min-w-full min-h-full max-w-none object-cover" />
-            <div className="absolute inset-0 z-10 bg-black/40"></div> {/* Dark overlay */}
-            
-            <div className="relative z-20 container mx-auto px-4 sm:px-6 lg:px-8 text-white">
-              <motion.h1
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.8, delay: 0.2 }}
-                className="text-4xl md:text-5xl lg:text-7xl font-bold font-heading mb-6"
-              >
-                Join a Family Bound by Purpose
-              </motion.h1>
-              <motion.p
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.8, delay: 0.4 }}
-                className="text-lg md:text-xl max-w-3xl mx-auto mb-8"
-              >
-                We are a vibrant community united by a shared vision of empowerment, collaboration, and growth.
-              </motion.p>
-              <motion.div
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.8, delay: 0.6 }}
-                className="flex flex-wrap justify-center gap-4"
-              >
-                <Link to="/donate" className={btnAccent}>Support Our Mission</Link>
-                <Link to="/about" className={btnGhost}>Learn More</Link>
-              </motion.div>
-            </div>
+            <motion.div
+              initial="hidden"
+              animate="visible"
+              variants={fadeInUp}
+              transition={{ duration: 0.5, delay: 0.5 }}
+              className="flex flex-col sm:flex-row justify-center lg:justify-start gap-4"
+            >
+              <Link to="/donate" className={btnAccent}>
+                Donate Now
+              </Link>
+              <Link to="/get-involved" className={btnGhost}>
+                Learn More
+              </Link>
+            </motion.div>
           </div>
-        </SwiperSlide>
+          
+          {/* 2. Image (Takes 40% width on large screens) */}
+          <div className="w-full lg:w-2/5">
+            <motion.img
+              src="./public/img/carousel-1.jpg" // TODO: Replace with your image
+              alt="Happy children in a community program"
+              initial={{ opacity: 0, scale: 0.9 }}
+              animate={{ opacity: 1, scale: 1 }}
+              transition={{ duration: 0.6, delay: 0.2 }}
+              className="w-full h-auto max-h-[500px] object-cover rounded-xl shadow-2xl"
+            />
+          </div>
 
-        {/* You can add more SwiperSlides here for additional images */}
-        
-      </Swiper>
-    </div>
+        </div>
+      </div>
+    </section>
   );
 };
 
