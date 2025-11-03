@@ -1,10 +1,10 @@
 import React from 'react';
 import { createBrowserRouter, RouterProvider } from 'react-router-dom';
 
-
-// Import Layouts
+// Import Layouts & Protected Route
 import Layout from './components/Layout';
 import AdminLayout from './components/AdminLayout';
+import ProtectedRoute from './components/ProtectedRoute';
 import NotFound from './pages/NotFound';
 
 // Import Main Pages
@@ -17,6 +17,7 @@ import Donate from './pages/Donate';
 import PaymentSuccess from './pages/PaymentSuccess';
 import Blog from './pages/Blog';
 import BlogPost from './pages/BlogPost';
+import ProgramPage from './pages/ProgramPage';
 
 // Import Admin Pages
 import AdminLogin from './pages/AdminLogin';
@@ -24,7 +25,7 @@ import AdminDashboard from './pages/AdminDashboard';
 import AdminDonations from './pages/AdminDonations';
 import AdminContacts from './pages/AdminContacts';
 import AdminPosts from './pages/AdminPosts';
-
+import AdminEditPost from './pages/AdminEditPost'; // <-- 1. Import new page
 
 const router = createBrowserRouter([
   {
@@ -41,29 +42,32 @@ const router = createBrowserRouter([
       { path: 'donate', element: <Donate /> },
       { path: 'payment-success', element: <PaymentSuccess /> },
       { path: 'blog', element: <Blog /> },
-      
-      // --- THIS IS THE FIX ---
-      // It now correctly matches /blog/your-post-title
-      { path: 'blog/:slug', element: <BlogPost /> }, 
-      
+      { path: 'blog/:slug', element: <BlogPost /> },
       { path: '*', element: <NotFound /> },
     ],
   },
   {
-    // --- Admin Login (No Layout) ---
+    // --- Admin Login (No Main Layout) ---
     path: '/admin-login',
     element: <AdminLogin />,
   },
   {
-    // --- Admin Section (Uses AdminLayout) ---
+    // --- Admin Section (Now Protected) ---
     path: '/admin',
-    element: <AdminLayout />,
+    element: <ProtectedRoute />,
     children: [
-      { path: 'dashboard', element: <AdminDashboard /> },
-      { path: 'donations', element: <AdminDonations /> },
-      { path: 'contacts', element: <AdminContacts /> },
-      { path: 'posts', element: <AdminPosts /> },
-    ],
+      {
+        element: <AdminLayout />, 
+        children: [
+          { path: 'dashboard', element: <AdminDashboard /> },
+          { path: 'donations', element: <AdminDonations /> },
+          { path: 'contacts', element: <AdminContacts /> },
+          { path: 'posts', element: <AdminPosts /> },
+          // 2. Add dynamic route for editing a post
+          { path: 'posts/edit/:id', element: <AdminEditPost /> }, 
+        ]
+      }
+    ]
   }
 ]);
 

@@ -1,5 +1,6 @@
 import mongoose from 'mongoose';
 import dotenv from 'dotenv';
+import { authAdmin } from '../lib/firebaseAdmin.js'; // <-- THIS IS THE FIX
 
 dotenv.config();
 
@@ -17,7 +18,6 @@ const connectDB = async () => {
 };
 
 // --- Database Schema (Unified) ---
-// This schema must match the one you use in api/donate.js
 const donationSchema = new mongoose.Schema({
   name: { type: String, required: true },
   email: { type: String, required: true },
@@ -34,51 +34,54 @@ const Donation = mongoose.models.Donation || mongoose.model('Donation', donation
 const setCorsHeaders = (req, res) => {
   const origin = req.headers.origin;
   const allowedOrigins = [
-    'http://localhost:3000', // For vercel dev
-    'https://jukaneswebsite.vercel.app' // YOUR LIVE VERCEL URL
+    'http://localhost:3000',
+    'https://jukaneswebsite.vercel.app'
   ];
-
   if (allowedOrigins.includes(origin)) {
     res.setHeader('Access-Control-Allow-Origin', origin);
   }
-  
-  res.setHeader('Access-Control-Allow-Methods', 'GET, OPTIONS'); // Only allow GET
-  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization'); // We will use Authorization
+  res.setHeader('Access-Control-Allow-Methods', 'GET, OPTIONS');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+};
+
+// --- Token Verification ---
+const verifyToken = async (req, res) => {
+  const authHeader = req.headers.authorization;
+  if (!authHeader || !authHeader.startsWith('Bearer ')) {
+    return res.status(401).json({ msg: 'Unauthorized: No token provided' });
+  }
+  const idToken = authHeader.split('Bearer ')[1];
+  try {
+    const decodedToken = await authAdmin.verifyIdToken(idToken);
+    req.user = decodedToken;
+    return true;
+  } catch (error) {
+    console.error('Firebase token verification error:', error.message);
+    return res.status(401).json({ msg: 'Unauthorized: Invalid token' });
+  }
 };
 
 // --- Main Handler ---
 const handler = async (req, res) => {
   setCorsHeaders(req, res);
   if (req.method === 'OPTIONS') return res.status(200).end();
-
-  // 1. We only want to respond to GET requests
   if (req.method !== 'GET') {
     res.setHeader('Allow', ['GET']);
     return res.status(405).json({ msg: `Method ${req.method} Not Allowed` });
   }
 
-  // 2. --- Simple Security Check ---
-  const SUPER_SECRET_PASSWORD = "jukanesadmin123"; // Must match AdminDashboard.jsx
-  const authHeader = req.headers.authorization;
+  const isVerified = await verifyToken(req, res);
+  if (isVerified !== true) return;
 
-  if (!authHeader || authHeader !== `Bearer ${SUPER_SECRET_PASSWORD}`) {
-    return res.status(401).json({ msg: 'Unauthorized: Access Denied' });
-  }
-  // --- End Security Check ---
+  console.log('Access granted for user:', req.user.email);
 
   try {
     await connectDB();
-
-    // 3. Fetch donations from MongoDB
     const donations = await Donation.find({}).sort({ createdAt: -1 });
-
-    // 4. Send the data back as JSON
     return res.status(200).json({
       msg: 'Donations fetched successfully',
-      count: donations.length,
       data: donations,
     });
-
   } catch (err) {
     console.error('Error fetching donations:', err.message);
     return res.status(500).json({ msg: 'Server error' });

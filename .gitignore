@@ -23,5 +23,8 @@ dist-ssr
 *.sln
 *.sw?
 
+#Firebase service account
+.firebase-service-account.json
+
 .vercel
 .env

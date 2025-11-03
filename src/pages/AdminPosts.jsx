@@ -1,28 +1,26 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
-import { FaSpinner, FaPlus } from 'react-icons/fa';
+import { useAuth } from '../context/AuthContext';
+import { FaSpinner, FaPlus, FaEdit, FaTrash } from 'react-icons/fa'; // Import new icons
 
 const AdminPosts = () => {
   const navigate = useNavigate();
+  const { currentUser, loading: authLoading } = useAuth();
   const [posts, setPosts] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
   
-  // State for the "New Post" form
   const [title, setTitle] = useState('');
   const [content, setContent] = useState('');
   const [imageUrl, setImageUrl] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [formError, setFormError] = useState('');
 
-  const SUPER_SECRET_PASSWORD = "jukanesadmin123"; // Must match login
-
   // --- 1. Fetch Existing Posts ---
   const fetchPosts = async () => {
     setIsLoading(true);
     setError(null);
     try {
-      // We don't need auth to GET posts (public blog)
       const response = await fetch('/api/posts'); 
       if (!response.ok) throw new Error('Failed to fetch posts');
       const result = await response.json();
@@ -36,41 +34,35 @@ const AdminPosts = () => {
 
   // --- 2. Security Check & Initial Fetch ---
   useEffect(() => {
-    const auth = sessionStorage.getItem('jukanes-admin-auth');
-    if (auth !== 'true') {
+    if (authLoading) return;
+    if (!currentUser) {
       navigate('/admin-login');
       return;
     }
     fetchPosts();
-  }, [navigate]);
+  }, [navigate, currentUser, authLoading]);
 
   // --- 3. Handle New Post Submission ---
   const handlePostSubmit = async (e) => {
     e.preventDefault();
     setIsSubmitting(true);
     setFormError('');
-
     try {
+      const token = await currentUser.getIdToken(); 
       const response = await fetch('/api/posts', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${SUPER_SECRET_PASSWORD}` // Send auth password
+          'Authorization': `Bearer ${token}`
         },
         body: JSON.stringify({ title, content, imageUrl }),
       });
-
       const result = await response.json();
-
       if (response.ok) {
-        // Success!
         alert('Post created successfully!');
-        setTitle('');
-        setContent('');
-        setImageUrl('');
+        setTitle(''); setContent(''); setImageUrl('');
         fetchPosts(); // Refresh the post list
       } else {
-        // Handle API errors (like "duplicate title")
         setFormError(result.msg || 'An error occurred.');
       }
     } catch (err) {
@@ -80,52 +72,73 @@ const AdminPosts = () => {
     }
   };
 
-  // Helper to format date
+  // 4. --- NEW: Handle Delete Post ---
+  const handleDelete = async (postId, postTitle) => {
+    // Show a confirmation dialog
+    if (!window.confirm(`Are you sure you want to delete the post "${postTitle}"?`)) {
+      return; // Do nothing if user clicks "Cancel"
+    }
+
+    try {
+      const token = await currentUser.getIdToken();
+      const response = await fetch('/api/posts', {
+        method: 'DELETE',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({ id: postId }),
+      });
+
+      const result = await response.json();
+      if (response.ok) {
+        alert('Post deleted successfully!');
+        fetchPosts(); // Refresh the post list
+      } else {
+        alert(`Error: ${result.msg || 'Failed to delete post.'}`);
+      }
+    } catch (err) {
+      alert('An error occurred. Check connection.');
+    }
+  };
+
   const formatDate = (dateString) => new Date(dateString).toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' });
 
-  // Reusable styles
-  const inputClasses = "w-full px-4 py-3 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-[#ffc72c] focus:border-transparent placeholder-gray-500 text-[#2e4057]";
+  const inputClasses = "w-full px-4 py-3 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-[#ffc72c] text-[#2e4057]";
   const labelClasses = "block text-sm font-medium text-[#2e4057] mb-1";
+
+  if (authLoading || isLoading) {
+    return (
+      <div className="flex justify-center items-center p-12">
+        <FaSpinner className="animate-spin text-4xl text-[#20a39e]" />
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-8">
       {/* --- Section 1: Create New Post --- */}
-      <div className="p-4 sm:p-6 bg-white border border-gray-200 rounded-lg shadow-sm dark:bg-neutral-800 dark:border-neutral-700">
+      <div className="p-4 sm:p-6 bg-white border border-gray-200 rounded-lg shadow-sm">
         <h2 className="text-xl font-semibold font-heading text-[#2e4057] mb-4">
           Create New Post
         </h2>
+        {/* ... (Create Post Form) ... */}
         <form onSubmit={handlePostSubmit} className="space-y-4">
-          <div>
+          {/* ... (title, imageUrl, content inputs) ... */}
+           <div>
             <label htmlFor="title" className={labelClasses}>Post Title</label>
-            <input
-              type="text" id="title" value={title}
-              onChange={(e) => setTitle(e.target.value)}
-              className={inputClasses} placeholder="Your blog post title" required
-            />
+            <input type="text" id="title" value={title} onChange={(e) => setTitle(e.target.value)} className={inputClasses} required />
           </div>
           <div>
             <label htmlFor="imageUrl" className={labelClasses}>Cover Image URL (Optional)</label>
-            <input
-              type="text" id="imageUrl" value={imageUrl}
-              onChange={(e) => setImageUrl(e.target.value)}
-              className={inputClasses} placeholder="https://example.com/image.jpg"
-            />
+            <input type="text" id="imageUrl" value={imageUrl} onChange={(e) => setImageUrl(e.target.value)} className={inputClasses} />
           </div>
           <div>
-            <label htmlFor="content" className={labelClasses}>Content (Markdown enabled)</label>
-            <textarea
-              id="content" value={content}
-              onChange={(e) => setContent(e.target.value)}
-              rows="8" className={`${inputClasses} resize-y`}
-              placeholder="Write your post content here..." required
-            ></textarea>
+            <label htmlFor="content" className={labelClasses}>Content</label>
+            <textarea id="content" value={content} onChange={(e) => setContent(e.target.value)} rows="8" className={`${inputClasses} resize-y`} required></textarea>
           </div>
           <div className="flex items-center gap-4">
-            <button
-              type="submit"
-              disabled={isSubmitting}
-              className="inline-flex items-center gap-2 bg-[#20a39e] text-white font-semibold py-3 px-6 rounded hover:bg-opacity-90 transition-colors duration-200 disabled:opacity-50"
-            >
+            <button type="submit" disabled={isSubmitting} className="inline-flex items-center gap-2 bg-[#20a39e] text-white font-semibold py-3 px-6 rounded hover:bg-opacity-90 transition-colors duration-200 disabled:opacity-50">
               {isSubmitting ? <FaSpinner className="animate-spin" /> : <FaPlus />}
               Publish Post
             </button>
@@ -135,42 +148,49 @@ const AdminPosts = () => {
       </div>
 
       {/* --- Section 2: Manage Existing Posts --- */}
-      <div className="p-4 sm:p-6 bg-white border border-gray-200 rounded-lg shadow-sm dark:bg-neutral-800 dark:border-neutral-700">
+      <div className="p-4 sm:p-6 bg-white border border-gray-200 rounded-lg shadow-sm">
         <h2 className="text-xl font-semibold font-heading text-[#2e4057] mb-4">
           Manage Posts
         </h2>
-
-        {isLoading && <div className="flex justify-center p-12"><FaSpinner className="animate-spin text-4xl text-[#20a39e]" /></div>}
+        
         {error && <div className="p-4 text-center text-red-700 bg-red-100 rounded-lg"><strong>Error:</strong> {error}</div>}
 
-        {/* Posts Table */}
-        {!isLoading && !error && (
+        {!error && (
           <div className="overflow-x-auto">
-            <table className="min-w-full divide-y divide-gray-200 dark:divide-neutral-700">
-              <thead className="bg-gray-50 dark:bg-neutral-800">
+            <table className="min-w-full divide-y divide-gray-200">
+              <thead className="bg-gray-50">
                 <tr>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-[#2e4057] uppercase dark:text-neutral-400">Title</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-[#2e4057] uppercase dark:text-neutral-400">Date</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-[#2e4057] uppercase dark:text-neutral-400">Slug</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-[#2e4057] uppercase dark:text-neutral-400">Actions</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-[#2e4057] uppercase">Title</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-[#2e4057] uppercase">Date</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-[#2e4057] uppercase">Actions</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-gray-200 dark:divide-neutral-700">
+              <tbody className="divide-y divide-gray-200">
                 {posts.length > 0 ? (
                   posts.map((post) => (
-                    <tr key={post._id} className="hover:bg-gray-50 dark:hover:bg-neutral-700">
-                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-[#2e4057] dark:text-neutral-200">{post.title}</td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-[#797e88] dark:text-neutral-400">{formatDate(post.createdAt)}</td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-[#797e88] dark:text-neutral-400">/blog/{post.slug}</td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                        <Link to={`/blog/${post.slug}`} className="text-[#20a39e] hover:text-[#1a8a86]" target="_blank" rel="noopener noreferrer">View</Link>
-                        {/* We will add Edit/Delete functions later */}
+                    <tr key={post._id} className="hover:bg-gray-50">
+                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-[#2e4057]">{post.title}</td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-[#797e88]">{formatDate(post.createdAt)}</td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium space-x-4">
+                        {/* 5. --- NEW LINKS --- */}
+                        <Link to={`/blog/${post.slug}`} className="text-[#20a39e] hover:underline" target="_blank" rel="noopener noreferrer">
+                          View
+                        </Link>
+                        <Link to={`/admin/posts/edit/${post._id}`} className="text-[#2e4057] hover:underline">
+                          Edit
+                        </Link>
+                        <button
+                          onClick={() => handleDelete(post._id, post.title)}
+                          className="text-[#ff6b6b] hover:underline"
+                        >
+                          Delete
+                        </button>
                       </td>
                     </tr>
                   ))
                 ) : (
                   <tr>
-                    <td colSpan="4" className="px-6 py-4 text-center text-[#797e88] dark:text-neutral-400">No posts found.</td>
+                    <td colSpan="4" className="px-6 py-4 text-center text-[#797e88]">No posts found.</td>
                   </tr>
                 )}
               </tbody>

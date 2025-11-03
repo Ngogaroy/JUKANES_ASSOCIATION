@@ -1,53 +1,52 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { FaSpinner } from 'react-icons/fa';
+import { useNavigate, Link } from 'react-router-dom';
+import { useAuth } from '../context/AuthContext';
+import { FaSpinner, FaDonate, FaEnvelopeOpenText, FaPenSquare } from 'react-icons/fa';
+import ReactApexChart from 'react-apexcharts';
 
+// --- Reusable Stat Card Component (Styled for JUKANES) ---
+const StatCard = ({ title, value, icon: Icon, colorClass }) => (
+  <div className={`p-6 bg-white border border-gray-200 rounded-lg shadow-sm flex items-center gap-x-4`}>
+    <div className={`flex-shrink-0 flex justify-center items-center size-12 rounded-lg ${colorClass.bg} ${colorClass.text}`}>
+      <Icon className="size-6" />
+    </div>
+    <div className="flex-1">
+      <p className="text-sm uppercase text-[#797e88]">{title}</p>
+      <p className="text-xl font-bold font-heading text-[#2e4057]">{value}</p>
+    </div>
+  </div>
+);
+
+// --- Main Dashboard Component ---
 const AdminDashboard = () => {
   const navigate = useNavigate();
-  const [donations, setDonations] = useState([]);
-  const [contacts, setContacts] = useState([]);
+  const { currentUser, loading: authLoading } = useAuth();
+  const [stats, setStats] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
 
-  const SUPER_SECRET_PASSWORD = "jukanesadmin123"; // Your secret password
-
   useEffect(() => {
-    // 1. Security Check
-    const auth = sessionStorage.getItem('jukanes-admin-auth');
-    if (auth !== 'true') {
+    if (authLoading) return; // Wait for Firebase
+    if (!currentUser) {
       navigate('/admin-login');
       return;
     }
 
-    // 2. Data Fetching
-    const fetchData = async () => {
+    const fetchStats = async () => {
       setIsLoading(true);
       setError(null);
       try {
-        // --- Fetch Donations ---
-        const donationsRes = await fetch('/api/donations', {
+        const token = await currentUser.getIdToken();
+        const response = await fetch('/api/admin/stats', {
           method: 'GET',
-          headers: { 'Authorization': `Bearer ${SUPER_SECRET_PASSWORD}` }
+          headers: { 'Authorization': `Bearer ${token}` }
         });
-        if (!donationsRes.ok) {
-          const errData = await donationsRes.json();
-          throw new Error(`Failed to fetch donations: ${errData.msg || donationsRes.statusText}`);
+        if (!response.ok) {
+          const errData = await response.json();
+          throw new Error(`Failed to fetch stats: ${errData.msg || response.statusText}`);
         }
-        const donationsResult = await donationsRes.json();
-        setDonations(donationsResult.data);
-
-        // --- Fetch Contacts ---
-        const contactsRes = await fetch('/api/contacts', {
-          method: 'GET',
-          headers: { 'Authorization': `Bearer ${SUPER_SECRET_PASSWORD}` }
-        });
-        if (!contactsRes.ok) {
-           const errData = await contactsRes.json();
-          throw new Error(`Failed to fetch contacts: ${errData.msg || contactsRes.statusText}`);
-        }
-        const contactsResult = await contactsRes.json();
-        setContacts(contactsResult.data);
-        
+        const result = await response.json();
+        setStats(result.data);
       } catch (err) {
         setError(err.message);
       } finally {
@@ -55,146 +54,118 @@ const AdminDashboard = () => {
       }
     };
 
-    fetchData();
-  }, [navigate]);
+    fetchStats();
+  }, [currentUser, authLoading, navigate]);
 
-  const handleLogout = () => {
-    sessionStorage.removeItem('jukanes-admin-auth');
-    navigate('/admin-login');
+  // --- Format Data for Chart ---
+  const donationTotalKES = stats?.donations.find(d => d._id === 'kes')?.total || 0;
+  const donationTotalUSD = stats?.donations.find(d => d._id === 'usd')?.total || 0;
+
+  // Chart options (styled for JUKANES brand)
+  const chartOptions = {
+    chart: {
+      id: 'donations-chart',
+      toolbar: { show: false },
+      fontFamily: "'Work Sans', sans-serif",
+    },
+    xaxis: {
+      categories: ['KES Donations', 'USD Donations', 'Total Messages', 'Blog Posts'],
+      labels: { style: { colors: '#797e88' } },
+    },
+    yaxis: { labels: { style: { colors: '#797e88' } } },
+    colors: ['#20a39e', '#ffc72c', '#2e4057', '#ff6b6b'], // JUKANES Palette
+    plotOptions: { bar: { borderRadius: 4, horizontal: false, distributed: true } },
+    legend: { show: false },
+    dataLabels: { enabled: false },
+    theme: { mode: 'light' }
   };
 
-  const formatDate = (dateString) => {
-    if (!dateString) return 'No date';
-    return new Date(dateString).toLocaleString('en-US', {
-      year: 'numeric', month: 'short', day: 'numeric',
-      hour: '2-digit', minute: '2-digit'
-    });
-  };
+  // Chart series data
+  const chartSeries = [
+    {
+      name: 'Total',
+      data: [
+        donationTotalKES,
+        donationTotalUSD,
+        stats?.contacts || 0,
+        stats?.posts || 0,
+      ],
+    },
+  ];
+
+  if (authLoading || isLoading) {
+    return (
+      <div className="flex justify-center items-center p-12">
+        <FaSpinner className="animate-spin text-4xl text-[#20a39e]" />
+      </div>
+    );
+  }
 
   return (
-    <div className="min-h-screen bg-gray-100">
-      {/* Dashboard Header */}
-      <header className="bg-white shadow">
-        <div className="container mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between items-center h-16">
-            <h1 className="text-2xl font-bold font-heading text-[#2e4057]">
-              Admin Dashboard
-            </h1>
-            <button
-              onClick={handleLogout}
-              className="text-sm font-medium text-[#2e4057] hover:text-[#ff6b6b]"
-            >
-              Logout
-            </button>
-          </div>
+    <div className="space-y-6">
+      {/* Header */}
+      <div className="flex flex-wrap justify-between items-center gap-2">
+        <div>
+          <h1 className="font-medium text-lg text-[#2e4057]">
+            Dashboard
+          </h1>
+          <p className="text-sm text-[#797e88]">
+            Welcome, Admin. Here's a summary of your site's activity.
+          </p>
         </div>
-      </header>
+        <div className="flex items-center gap-x-2">
+          <Link to="/admin/posts" className="inline-flex items-center gap-2 bg-[#20a39e] text-white font-semibold py-2 px-4 rounded hover:bg-opacity-90 transition-colors duration-200">
+            <FaPenSquare />
+            Create New Post
+          </Link>
+        </div>
+      </div>
+      {/* End Header */}
 
-      {/* Main Content Area */}
-      <main className="container mx-auto p-4 sm:p-6 lg:p-8 space-y-8">
-        
-        {/* Loading State */}
-        {isLoading && (
-          <div className="flex justify-center items-center p-12">
-            <FaSpinner className="animate-spin text-4xl text-[#20a39e]" />
-            <span className="ml-4 text-lg text-[#797e88]">Loading Data...</span>
-          </div>
-        )}
-        
-        {/* Error State */}
-        {error && (
-          <div className="p-4 mb-4 text-center text-red-700 bg-red-100 rounded-lg">
-            <strong>Error:</strong> {error}
-          </div>
-        )}
+      {/* --- Stat Cards Grid (Styled) --- */}
+      {error && (
+        <div className="p-4 text-center text-red-700 bg-red-100 rounded-lg">
+          <strong>Error fetching stats:</strong> {error.message}
+        </div>
+      )}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+        <StatCard 
+          title="Total KES Donations" 
+          value={`Ksh ${donationTotalKES.toLocaleString()}`} 
+          icon={FaDonate} 
+          colorClass={{ bg: 'bg-[#20a39e]/10', text: 'text-[#20a39e]' }} // Teal
+        />
+        <StatCard 
+          title="Total USD Donations" 
+          value={`$ ${donationTotalUSD.toLocaleString()}`} 
+          icon={FaDonate} 
+          colorClass={{ bg: 'bg-[#ffc72c]/10', text: 'text-[#daa520]' }} // Yellow
+        />
+        <StatCard 
+          title="Contact Messages" 
+          value={stats?.contacts || 0} 
+          icon={FaEnvelopeOpenText} 
+          colorClass={{ bg: 'bg-[#2e4057]/10', text: 'text-[#2e4057]' }} // Dark Blue
+        />
+      </div>
 
-        {/* --- Donation Table --- */}
-        {!isLoading && !error && (
-          <div className="p-6 bg-white rounded-lg shadow">
-            <h2 className="text-xl font-semibold font-heading text-[#2e4057] mb-4">
-              Donation Records
-            </h2>
-            <div className="overflow-x-auto">
-              <table className="min-w-full divide-y divide-gray-200">
-                <thead className="bg-gray-50">
-                  <tr>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-[#2e4057] uppercase tracking-wider">Status</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-[#2e4057] uppercase tracking-wider">Date</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-[#2e4057] uppercase tracking-wider">Name</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-[#2e4057] uppercase tracking-wider">Email</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-[#2e4057] uppercase tracking-wider">Amount</th>
-                  </tr>
-                </thead>
-                <tbody className="bg-white divide-y divide-gray-200">
-                  {donations.length > 0 ? (
-                    donations.map((donation) => (
-                      <tr key={donation._id}>
-                        <td className="px-6 py-4 whitespace-nowrap">
-                          <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${
-                            donation.status === 'Succeeded' ? 'bg-green-100 text-green-800' : 
-                            donation.status === 'Pending M-Pesa' ? 'bg-yellow-100 text-yellow-800' :
-                            'bg-gray-100 text-gray-800'
-                          }`}>
-                            {donation.status}
-                          </span>
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-[#797e88]">{formatDate(donation.createdAt)}</td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-[#2e4057]">{donation.name}</td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-[#797e88]">{donation.email}</td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-[#2e4057]">{donation.amount} {donation.currency?.toUpperCase() || ''}</td>
-                      </tr>
-                    ))
-                  ) : (
-                    <tr>
-                      <td colSpan="5" className="px-6 py-4 text-center text-[#797e88]">No donations found.</td>
-                    </tr>
-                  )}
-                </tbody>
-              </table>
-            </div>
-          </div>
-        )}
-        
-        {/* --- Contact Messages Table --- */}
-        {!isLoading && !error && (
-          <div className="p-6 bg-white rounded-lg shadow">
-            <h2 className="text-xl font-semibold font-heading text-[#2e4057] mb-4">
-              Contact Messages
-            </h2>
-            <div className="overflow-x-auto">
-              <table className="min-w-full divide-y divide-gray-200">
-                <thead className="bg-gray-50">
-                  <tr>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-[#2e4057] uppercase tracking-wider">Date</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-[#2e4057] uppercase tracking-wider">Name</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-[#2e4057] uppercase tracking-wider">Email</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-[#2e4057] uppercase tracking-wider">Subject</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-[#2e4057] uppercase tracking-wider">Message</th>
-                  </tr>
-                </thead>
-                <tbody className="bg-white divide-y divide-gray-200">
-                  {contacts.length > 0 ? (
-                    contacts.map((contact) => (
-                      <tr key={contact._id}>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-[#797e88]">{formatDate(contact.submittedAt)}</td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-[#2e4057]">{contact.name}</td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-[#797e88]">{contact.email}</td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-[#2e4057]">{contact.subject}</td>
-                        <td className="px-6 py-4 text-sm text-[#797e88] whitespace-pre-wrap max-w-sm">{contact.message}</td>
-                      </tr>
-                    ))
-                  ) : (
-                    <tr>
-                      <td colSpan="5" className="px-6 py-4 text-center text-[#797e88]">No contact messages found.</td>
-                    </tr>
-                  )}
-                </tbody>
-              </table>
-            </div>
-          </div>
-        )}
-
-      </main>
+      {/* --- Chart (Styled) --- */}
+      <div className="p-4 sm:p-6 bg-white border border-gray-200 rounded-lg shadow-sm">
+        <h2 className="text-xl font-semibold font-heading text-[#2e4057] mb-4">
+          JUKANES Overview
+        </h2>
+        <div className="min-h-[300px] rounded-lg">
+          {typeof window !== 'undefined' && (
+            <ReactApexChart 
+              options={chartOptions} 
+              series={chartSeries} 
+              type="bar" 
+              width="100%" 
+              height="350" 
+            />
+          )}
+        </div>
+      </div>
     </div>
   );
 };
