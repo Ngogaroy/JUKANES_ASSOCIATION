@@ -71,7 +71,7 @@ const Transparency = () => {
           {/* Image/Graphic */}
           <div className="mt-10 lg:mt-0">
             {/* You could replace this with an actual pie chart graphic */}
-            <img className="w-full h-auto rounded shadow-lg" src="/img/donation-2.jpg" alt="Community impact" /> 
+            <img className="w-full h-auto rounded shadow-lg" src="/img/contribution.jpg" alt="Community impact" /> 
           </div>
         </div>
       </div>

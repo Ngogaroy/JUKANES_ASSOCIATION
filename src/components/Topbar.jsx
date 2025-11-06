@@ -34,7 +34,7 @@ const Topbar = () => {
                 </div>
                 <div className="ml-3">
                   <h6 className="font-heading text-white mb-0 text-base font-semibold tracking-wide">Call Us</h6>
-                  <span className="text-gray-200 text-sm">+254 7XX XXXX</span>
+                  <span className="text-gray-200 text-sm">+254 748 487 789</span>
                 </div>
               </div>
 
@@ -45,7 +45,7 @@ const Topbar = () => {
                 </div>
                 <div className="ml-3">
                   <h6 className="font-heading text-white mb-0 text-base font-semibold tracking-wide">Mail Us</h6>
-                  <span className="text-gray-200 text-sm">info@jukanes.org</span>
+                  <span className="text-gray-200 text-sm">jukanesassociation@gmail.com</span>
                 </div>
               </div>
 

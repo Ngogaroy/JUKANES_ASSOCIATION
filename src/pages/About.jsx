@@ -138,9 +138,9 @@ const About = () => {
             </div>
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
               {/* Ensure TeamMemberCard uses hex codes & react-icons */}
-              <TeamMemberCard imageSrc="/img/team-1.jpg" name="Member 1" title="JUKANES Family" />
-              <TeamMemberCard imageSrc="/img/team-2.jpg" name="Member 2" title="JUKANES Family" />
-              <TeamMemberCard imageSrc="/img/team-3.jpg" name="Member 3" title="JUKANES Family" />
+             <TeamMemberCard imageSrc="/img/heskey.png" name="Heskey Mujukane" title="Chairperson" />
+               <TeamMemberCard imageSrc="/img/forsyth.png" name="Forsyth Ajega" title="Project & Welfare Lead" />
+               <TeamMemberCard imageSrc="/img/team-3.jpg" name="Asma Marjan" title="Vice Chairperson" />
             </div>
          </div>
        </div>

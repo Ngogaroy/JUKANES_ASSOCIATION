@@ -121,13 +121,13 @@ const Navbar = () => {
 
             {/* Social Icons */}
             <div className="hidden lg:flex items-center lg:ml-10 space-x-2 p-4 lg:p-0 border-t border-[#20a39e] lg:border-none mt-3 lg:mt-0">
-              <a className="w-10 h-10 bg-[#2e4057] text-white flex items-center justify-center hover:bg-opacity-80 transition-opacity" href="#!" aria-label="Twitter">
+              <a className="w-10 h-10 bg-[#2e4057] text-white flex items-center justify-center hover:bg-opacity-80 transition-opacity" href="https://x.com/Jukanes_Asso" aria-label="Twitter">
                 <FaTwitter />
               </a>
-              <a className="w-10 h-10 bg-[#2e4057] text-white flex items-center justify-center hover:bg-opacity-80 transition-opacity" href="#!" aria-label="Facebook">
+              <a className="w-10 h-10 bg-[#2e4057] text-white flex items-center justify-center hover:bg-opacity-80 transition-opacity" href="https://www.facebook.com/profile.php?id=61583451779165" aria-label="Facebook">
                 <FaFacebookF />
               </a>
-              <a className="w-10 h-10 bg-[#2e4057] text-white flex items-center justify-center hover:bg-opacity-80 transition-opacity" href="#!" aria-label="YouTube">
+              <a className="w-10 h-10 bg-[#2e4057] text-white flex items-center justify-center hover:bg-opacity-80 transition-opacity" href="https://www.youtube.com/@JukanesAssociation" aria-label="YouTube">
                 <FaYoutube />
               </a>
             </div>

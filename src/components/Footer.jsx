@@ -1,7 +1,7 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
 // Import icons
-import { FaTwitter, FaFacebookF, FaYoutube, FaLinkedinIn, FaMapMarkerAlt, FaPhoneAlt, FaEnvelope } from 'react-icons/fa';
+import { FaTwitter, FaFacebookF, FaYoutube, FaLinkedinIn, FaMapMarkerAlt, FaPhoneAlt, FaEnvelope, FaInstagram } from 'react-icons/fa';
 
 const Footer = () => {
   return (
@@ -18,29 +18,32 @@ const Footer = () => {
             {/* JUKANES Primary text (#ffc72c) for icons */}
             <p className="mb-2 flex items-start text-gray-400">
               <FaMapMarkerAlt className="text-[#ffc72c] mr-3 mt-1 flex-shrink-0 text-lg" />
-              <span>Nairobi, Kenya</span> {/* Updated */}
+              <span>Nairobi, Kenya</span> 
             </p>
             <p className="mb-2 flex items-start text-gray-400">
               <FaPhoneAlt className="text-[#ffc72c] mr-3 mt-1 flex-shrink-0 text-lg" />
-              <span>+254 XXX XXXXXX</span> {/* Update phone */}
+              <span>+254 748 487789</span> 
             </p>
             <p className="mb-2 flex items-start text-gray-400">
               <FaEnvelope className="text-[#ffc72c] mr-3 mt-1 flex-shrink-0 text-lg" />
-              <span>info@jukanes.org</span> {/* Update email */}
+              <span>jukanesassociation@gmail.com</span> 
             </p>
             {/* Social Icons - JUKANES Primary bg, Dark text */}
             <div className="flex pt-3 space-x-2">
-              <a className="w-9 h-9 bg-[#ffc72c] text-[#2e4057] flex items-center justify-center rounded-full hover:bg-opacity-80 transition-opacity" href="#!" aria-label="Twitter">
+              <a className="w-9 h-9 bg-[#ffc72c] text-[#2e4057] flex items-center justify-center rounded-full hover:bg-opacity-80 transition-opacity" href="https://x.com/Jukanes_Asso" aria-label="Twitter">
                 <FaTwitter />
               </a>
-              <a className="w-9 h-9 bg-[#ffc72c] text-[#2e4057] flex items-center justify-center rounded-full hover:bg-opacity-80 transition-opacity" href="#!" aria-label="Facebook">
+              <a className="w-9 h-9 bg-[#ffc72c] text-[#2e4057] flex items-center justify-center rounded-full hover:bg-opacity-80 transition-opacity" href="https://www.facebook.com/profile.php?id=61583451779165" aria-label="Facebook">
                 <FaFacebookF />
               </a>
-              <a className="w-9 h-9 bg-[#ffc72c] text-[#2e4057] flex items-center justify-center rounded-full hover:bg-opacity-80 transition-opacity" href="#!" aria-label="YouTube">
+              <a className="w-9 h-9 bg-[#ffc72c] text-[#2e4057] flex items-center justify-center rounded-full hover:bg-opacity-80 transition-opacity" href="https://www.youtube.com/@JukanesAssociation" aria-label="YouTube">
                 <FaYoutube />
               </a>
-              <a className="w-9 h-9 bg-[#ffc72c] text-[#2e4057] flex items-center justify-center rounded-full hover:bg-opacity-80 transition-opacity" href="#!" aria-label="LinkedIn">
+              <a className="w-9 h-9 bg-[#ffc72c] text-[#2e4057] flex items-center justify-center rounded-full hover:bg-opacity-80 transition-opacity" href="https://www.linkedin.com/in/jukanes-association-31ba65395/" aria-label="LinkedIn">
                 <FaLinkedinIn />
+              </a>
+              <a className="w-9 h-9 bg-[#ffc72c] text-[#2e4057] flex items-center justify-center rounded-full hover:bg-opacity-80 transition-opacity" href="https://www.instagram.com/jukanes_association/" aria-label="Instagram">
+                <FaInstagram />
               </a>
             </div>
           </div>

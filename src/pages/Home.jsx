@@ -169,9 +169,9 @@ const Home = () => {
              <h1 className="text-4xl md:text-5xl font-bold font-heading mb-4 text-[#2e4057]">How Your Support Helps</h1>
           </div>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-            <DonationCauseCard imageSrc="/img/donation-1.jpg" tag="Support" title="Care Packs & Drives" raised="XX%" goal="Target" percentage="XX"/>
-            <DonationCauseCard imageSrc="/img/donation-2.jpg" tag="Joy" title="Moments of Joy Days" raised="XX%" goal="Target" percentage="XX"/>
-            <DonationCauseCard imageSrc="/img/donation-3.jpg" tag="Mentorship" title="Mentorship & Talent" raised="XX%" goal="Target" percentage="XX"/>
+            <DonationCauseCard imageSrc="/img/care-pack.jpg" tag="Support" title="Care Packs & Drives" raised="XX%" goal="Target" percentage="XX"/>
+            <DonationCauseCard imageSrc="/img/joy.jpg" tag="Joy" title="Moments of Joy Days" raised="XX%" goal="Target" percentage="XX"/>
+            <DonationCauseCard imageSrc="/img/mentorship.jpg" tag="Mentorship" title="Mentorship & Talent" raised="XX%" goal="Target" percentage="XX"/>
           </div>
         </div>
       </AnimatedSection>
@@ -186,9 +186,9 @@ const Home = () => {
                <h1 className="text-4xl md:text-5xl font-bold font-heading mb-4 text-[#2e4057]">Meet Our Members</h1>
              </div>
              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
-               <TeamMemberCard imageSrc="/img/team-1.jpg" name="Member 1" title="Role/Contribution" />
-               <TeamMemberCard imageSrc="/img/team-2.jpg" name="Member 2" title="Role/Contribution" />
-               <TeamMemberCard imageSrc="/img/team-3.jpg" name="Member 3" title="Role/Contribution" />
+               <TeamMemberCard imageSrc="/img/heskey.png" name="Heskey Mujukane" title="Chairperson" />
+               <TeamMemberCard imageSrc="/img/forsyth.png" name="Forsyth Ajega" title="Project & Welfare Lead" />
+               <TeamMemberCard imageSrc="/img/team-3.jpg" name="Asma Marjan" title="Vice Chairperson" />
              </div>
           </div>
          </div>
@@ -207,7 +207,7 @@ const Home = () => {
                <div className="bg-[#fffacd] p-8 rounded shadow-lg">
                   <div className="flex flex-col md:flex-row gap-8 items-center">
                     <div className="md:w-1/3 flex-shrink-0">
-                      <img className="w-full h-auto rounded-lg shadow-md" src="/img/testimonial-1.jpg" alt="Testimonial person"/>
+                      <img className="w-full h-auto rounded-lg shadow-md" src="/img/amazing wonders.png" alt="Testimonial person"/>
                     </div>
                     <div className="md:w-2/3">
                       <div className="mb-3 text-[#ffc72c] flex space-x-1">
@@ -220,7 +220,7 @@ const Home = () => {
                          </div>
                          <div>
                             <h5 className="font-heading text-xl font-semibold text-[#2e4057] mb-0">Beneficiary/Partner Name</h5>
-                            <span className="text-[#797e88]">Role/Center</span>
+                            <span className="text-[#797e88]">Director (Amazing Wonders Rescue Center)</span>
                          </div>
                       </div>
                     </div>
