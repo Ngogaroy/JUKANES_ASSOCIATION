@@ -60,7 +60,7 @@ const HeroSection = () => {
           {/* 2. Image (Takes 40% width on large screens) */}
           <div className="w-full lg:w-2/5">
             <motion.img
-              src="./public/img/carousel-1.jpg" // TODO: Replace with your image
+              src="/img/joy.jpg" // TODO: Replace with your image
               alt="Happy children in a community program"
               initial={{ opacity: 0, scale: 0.9 }}
               animate={{ opacity: 1, scale: 1 }}
