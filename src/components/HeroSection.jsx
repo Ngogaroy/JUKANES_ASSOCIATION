@@ -51,7 +51,7 @@ const HeroSection = () => {
               <Link to="/donate" className={btnAccent}>
                 Donate Now
               </Link>
-              <Link to="/get-involved" className={btnGhost}>
+              <Link to="/about" className={btnGhost}>
                 Learn More
               </Link>
             </motion.div>

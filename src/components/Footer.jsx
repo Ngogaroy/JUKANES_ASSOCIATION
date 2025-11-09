@@ -53,7 +53,7 @@ const Footer = () => {
             <h4 className="font-heading text-[#fffacd] text-xl mb-4">Quick Links</h4>
             <Link className="block py-1 text-gray-400 hover:text-[#fffacd] transition-colors" to="/about">About Us</Link>
             <Link className="block py-1 text-gray-400 hover:text-[#fffacd] transition-colors" to="/contact">Contact Us</Link>
-            <Link className="block py-1 text-gray-400 hover:text-[#fffacd] transition-colors" to="/our-work">Our Services</Link>
+            <Link className="block py-1 text-gray-400 hover:text-[#fffacd] transition-colors" to="/our-work">Our Work</Link>
             <Link className="block py-1 text-gray-400 hover:text-[#fffacd] transition-colors" to="/donate">Donate</Link>
             {/* Add Terms, Support links if needed */}
           </div>

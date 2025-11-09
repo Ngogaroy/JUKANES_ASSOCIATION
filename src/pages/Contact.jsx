@@ -151,13 +151,13 @@ const Contact = () => {
               <h3 className="text-2xl font-heading font-semibold text-[#2e4057] mb-4 flex items-center">
                 <FaEnvelope className="text-[#ffc72c] mr-3 text-xl" /> Email Us
               </h3>
-              <a href="mailto:info@jukanes.org" className="text-[#797e88] hover:text-[#ffc72c] break-all">info@jukanes.org</a>
+              <a href="mailto:jukanesassociation@gmail.com" className="text-[#797e88] hover:text-[#ffc72c] break-all">jukanesassociation@gmail.com</a>
             </div>
             <div className="bg-[#fffacd] p-6 rounded-lg shadow">
               <h3 className="text-2xl font-heading font-semibold text-[#2e4057] mb-4 flex items-center">
                  <FaPhoneAlt className="text-[#ffc72c] mr-3 text-xl" /> Call Us
               </h3>
-              <a href="tel:+01234567890" className="text-[#797e88] hover:text-[#ffc72c]">+254 XXX XXXXXX</a>
+              <a href="tel:+01234567890" className="text-[#797e88] hover:text-[#ffc72c]">+254 748 487 789</a>
             </div>
           </div>
 

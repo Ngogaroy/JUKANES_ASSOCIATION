@@ -11,8 +11,7 @@ import { FaAward, FaListCheck, FaComments } from 'react-icons/fa6';
 // --- END OF FIX ---
 
 // Import Swiper
-import { Swiper, SwiperSlide } from 'swiper/react';
-import { Navigation, Autoplay, EffectFade, Pagination } from 'swiper/modules';
+
 import 'swiper/css';
 import 'swiper/css/navigation';
 import 'swiper/css/pagination';
